@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+#/ Usage: bin/build [--zip]
+#/ Description: Builds the extension into dist/ (optionally zips it for upload)
+
+source bin/helpers/_utils.sh
+set_source_and_root_dir
+
+require_commands pnpm
+
+zip_it=false
+while (( "$#" )); do
+    case "$1" in
+        --zip) zip_it=true; shift ;;
+        -h|--help) show_help; exit 0 ;;
+        *) shift ;;
+    esac
+done
+
+print_color blue "Building extension..."
+pnpm run build
+
+if $zip_it; then
+    require_commands zip
+    version=$(node -p "require('./package.json').version")
+    rm -f "board-declutter-$version.zip"
+    (cd dist && zip -qr "../board-declutter-$version.zip" .)
+    success "Created board-declutter-$version.zip"
+fi

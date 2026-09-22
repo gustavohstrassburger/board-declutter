@@ -1,0 +1,140 @@
+/* Card states */
+[data-board-card-id][data-bd-mode='hide'] {
+  display: none !important;
+}
+
+[data-board-card-id][data-bd-mode='dim'] {
+  opacity: 0.4;
+  filter: grayscale(0.6);
+  transition: opacity 120ms ease;
+}
+
+[data-board-card-id][data-bd-mode='dim']:hover,
+[data-board-card-id][data-bd-mode='dim']:focus-within {
+  opacity: 1;
+  filter: none;
+}
+
+[data-board-card-id][data-bd-highlight] {
+  box-shadow: inset 3px 0 0 var(--fgColor-accent, #2f81f7);
+}
+
+[data-board-card-id][data-bd-reasons] {
+  position: relative;
+}
+
+[data-board-card-id][data-bd-reasons]::after {
+  content: attr(data-bd-reasons);
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--fgColor-muted, #8b949e);
+  background: var(--bgColor-muted, rgba(110, 118, 129, 0.15));
+  border-radius: 6px;
+  padding: 0 5px;
+  pointer-events: none;
+  max-width: 70%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Column stats */
+.bd-col-count {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--fgColor-muted, #8b949e);
+  white-space: nowrap;
+}
+
+/* Collapsed columns */
+[data-board-column][data-bd-collapsed] {
+  width: 56px !important;
+  min-width: 56px !important;
+  max-width: 56px !important;
+  overflow: hidden;
+}
+
+[data-board-column][data-bd-collapsed] > :not(:first-child) {
+  display: none !important;
+}
+
+[data-board-column][data-bd-collapsed] > :first-child {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  align-items: flex-start;
+}
+
+/* Compact mode */
+html[data-bd-compact] [data-board-card-id] h3[id^='board-card-title-'] {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+
+html[data-bd-compact] [data-board-card-id] figure[data-bd-field='labels'] {
+  display: none;
+}
+
+html[data-bd-compact] [data-board-card-id][data-bd-reasons]::after {
+  display: none;
+}
+
+/* Toolbar */
+.bd-toolbar {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  font:
+    12px/1.2 -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: var(--fgColor-default, #e6edf3);
+  background: var(--overlay-bgColor, #161b22);
+  border: 1px solid var(--borderColor-default, #30363d);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.bd-toolbar[hidden] {
+  display: none;
+}
+
+.bd-toolbar[data-disabled] .bd-toolbar__btn:not(:first-of-type) {
+  opacity: 0.5;
+}
+
+.bd-toolbar__summary {
+  color: var(--fgColor-muted, #8b949e);
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.bd-toolbar__btn {
+  cursor: pointer;
+  border: 1px solid var(--borderColor-default, #30363d);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: inherit;
+  color: inherit;
+  background: var(--bgColor-default, #0d1117);
+  white-space: nowrap;
+}
+
+.bd-toolbar__btn:hover {
+  background: var(--bgColor-muted, #21262d);
+}
+
+.bd-toolbar__btn--icon {
+  padding: 4px 8px;
+}

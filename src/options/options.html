@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Board Declutter settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Board Declutter</h1>
+      <p class="muted">
+        Rules run on every GitHub Projects board you open. Author, draft, reviewer and staleness
+        rules need a GitHub token; everything else works from what is visible on the card.
+      </p>
+
+      <form id="form">
+        <section>
+          <h2>You and your team</h2>
+          <label>
+            Your GitHub login
+            <input name="me" placeholder="octocat" autocomplete="off" />
+            <small
+              >Cards you author, are assigned to or review get a blue marker and are never
+              hidden.</small
+            >
+          </label>
+          <label>
+            Team members (one per line)
+            <textarea name="teamMembers" rows="4" placeholder="haacked&#10;matheus-vb"></textarea>
+          </label>
+          <label>
+            Team labels (one per line)
+            <textarea name="teamLabels" rows="2" placeholder="team/feature-flags"></textarea>
+          </label>
+          <label>
+            Cards from other teams
+            <select name="otherTeamsMode" data-mode></select>
+            <small
+              >Applies to cards with no team member as author, assignee or reviewer and no team
+              label.</small
+            >
+          </label>
+        </section>
+
+        <section>
+          <h2>Noise</h2>
+          <label>
+            Bot-authored PRs
+            <select name="botMode" data-mode></select>
+          </label>
+          <label>
+            Bot logins (one per line, on top of GitHub's own bot accounts)
+            <textarea name="botAuthors" rows="4"></textarea>
+          </label>
+          <label>
+            Draft PRs
+            <select name="draftMode" data-mode></select>
+          </label>
+          <label>
+            Cards with no assignee
+            <select name="unassignedMode" data-mode></select>
+          </label>
+          <label>
+            Stale cards
+            <span class="row">
+              <select name="staleMode" data-mode></select>
+              after <input name="staleDays" type="number" min="0" step="1" class="narrow" /> days
+              without update (0 disables)
+            </span>
+          </label>
+          <label>
+            Hide titles matching these regexes (one per line)
+            <textarea name="titlePatterns" rows="2" placeholder="^trunk-merge/"></textarea>
+          </label>
+        </section>
+
+        <section>
+          <h2>Layout</h2>
+          <label>
+            Collapse these columns (one per line)
+            <textarea name="collapsedColumns" rows="2" placeholder="Done"></textarea>
+          </label>
+          <label class="check">
+            <input name="compact" type="checkbox" /> Compact cards (single-line titles, no labels)
+          </label>
+        </section>
+
+        <section>
+          <h2>GitHub token</h2>
+          <label>
+            Personal access token
+            <input name="githubToken" type="password" autocomplete="off" />
+            <small>
+              Needs read access to the repositories on your boards (classic: <code>repo</code>;
+              fine-grained: Pull requests and Issues read). Kept in this browser profile only, never
+              synced, and only sent to <code>api.github.com</code>.
+            </small>
+          </label>
+        </section>
+
+        <footer>
+          <button type="submit">Save</button>
+          <button type="button" id="reset" class="secondary">Reset to defaults</button>
+          <span id="status" class="muted" role="status"></span>
+        </footer>
+      </form>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>

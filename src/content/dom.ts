@@ -1,0 +1,107 @@
+import type { Card } from '../core/types'
+
+/** Selectors verified against the GitHub Projects (memex) board DOM in September 2026.
+ *  Everything else on the board uses hashed CSS module class names, so only data attributes and ids are relied on. */
+export const SELECTORS = {
+  board: '#project-items-region',
+  column: '[data-board-column]',
+  card: '[data-board-card-id]',
+  cardTitle: 'h3[id^="board-card-title-"]',
+  avatar: 'img[data-testid="github-avatar"]',
+} as const
+
+const ITEM_PATH = /^\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)$/
+
+export function cardKey(card: Pick<Card, 'repo' | 'number'>): string | undefined {
+  return card.repo && card.number ? `${card.repo}#${card.number}` : undefined
+}
+
+/** Board cards are virtualised: off-screen ones are empty placeholders that only carry an aria-label. */
+export function isRendered(el: Element): boolean {
+  return el.children.length > 0
+}
+
+function figureFields(el: Element): Map<string, { figure: Element; values: string[] }> {
+  const fields = new Map<string, { figure: Element; values: string[] }>()
+  for (const figure of el.querySelectorAll('figure')) {
+    const caption = figure.querySelector('figcaption')?.textContent ?? ''
+    const colon = caption.indexOf(':')
+    if (colon === -1) continue
+    const name = caption.slice(0, colon).trim().toLowerCase()
+    const avatars = [...figure.querySelectorAll<HTMLImageElement>(SELECTORS.avatar)].map(
+      (i) => i.alt,
+    )
+    const values = avatars.length
+      ? avatars
+      : caption
+          .slice(colon + 1)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+    fields.set(name, { figure, values })
+    figure.setAttribute('data-bd-field', name)
+  }
+  return fields
+}
+
+/** The issue/PR the card points at. Only github.com item paths count, and the title anchor is preferred. */
+function itemLink(el: Element): RegExpMatchArray | undefined {
+  const anchors = [
+    ...el.querySelectorAll<HTMLAnchorElement>(
+      `${SELECTORS.cardTitle} a, a:has(${SELECTORS.cardTitle})`,
+    ),
+    ...el.querySelectorAll<HTMLAnchorElement>('a[href]'),
+  ]
+  for (const a of anchors) {
+    let url: URL
+    try {
+      url = new URL(a.href, location.href)
+    } catch {
+      continue
+    }
+    if (url.hostname !== 'github.com') continue
+    const m = url.pathname.match(ITEM_PATH)
+    if (m) return m
+  }
+  return undefined
+}
+
+export function parseCard(el: Element): Card | null {
+  const id = el.getAttribute('data-board-card-id')
+  if (!id || !isRendered(el)) return null
+
+  const column = el.closest(SELECTORS.column)?.getAttribute('data-board-column') ?? ''
+  const title =
+    el.querySelector(SELECTORS.cardTitle)?.textContent?.trim() ||
+    el.getAttribute('aria-label') ||
+    ''
+
+  const link = itemLink(el)
+
+  const subject = el.getAttribute('data-hovercard-subject-tag') ?? ''
+  let type: Card['type'] = 'draft'
+  if (subject.startsWith('pull_request:') || link?.[3] === 'pull') type = 'pull_request'
+  else if (subject.startsWith('issue:') || link?.[3] === 'issues') type = 'issue'
+
+  const fields = figureFields(el)
+
+  return {
+    id,
+    column,
+    title,
+    repo: link ? `${link[1]}/${link[2]}` : undefined,
+    number: link ? Number(link[4]) : undefined,
+    type,
+    assignees: fields.get('assignees')?.values ?? [],
+    labels: fields.get('labels')?.values ?? [],
+  }
+}
+
+export function parseBoard(root: ParentNode): { el: Element; card: Card }[] {
+  const out: { el: Element; card: Card }[] = []
+  for (const el of root.querySelectorAll(SELECTORS.card)) {
+    const card = parseCard(el)
+    if (card) out.push({ el, card })
+  }
+  return out
+}

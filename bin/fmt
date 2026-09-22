@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#/ Usage: bin/fmt [options]
+#/ Description: Formats code according to project standards
+#/ Options:
+#/   -c, --check    Check formatting without making changes
+
+source bin/helpers/_utils.sh
+set_source_and_root_dir
+
+check=false
+
+while (( "$#" )); do
+    case "$1" in
+        -c|--check) check=true; shift ;;
+        -h|--help) show_help; exit 0 ;;
+        *) shift ;;
+    esac
+done
+
+require_commands pnpm
+
+success_flag=true
+
+if $check; then
+    print_color blue "Checking code formatting..."
+    pnpm exec prettier --check . || success_flag=false
+    pnpm exec eslint . || success_flag=false
+else
+    print_color blue "Formatting code..."
+    pnpm exec prettier --write . || success_flag=false
+    pnpm exec eslint . --fix || success_flag=false
+fi
+
+if $success_flag; then
+    success "Formatting complete"
+else
+    fatal "Formatting failed"
+fi

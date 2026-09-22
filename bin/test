@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#/ Usage: bin/test [vitest-args]
+#/ Description: Runs the test suite
+
+source bin/helpers/_utils.sh
+set_source_and_root_dir
+
+require_commands pnpm
+
+print_color blue "Running tests..."
+pnpm exec vitest run "$@"

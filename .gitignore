@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Editors
+.idea
+.vscode
+*.swp
+*~
+
+# Logs
+*.log
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+*.zip
+
+# Scratch
+.notes/

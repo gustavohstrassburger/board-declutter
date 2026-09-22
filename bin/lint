@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#/ Usage: bin/lint
+#/ Description: Runs eslint, prettier check and the TypeScript type checker
+
+source bin/helpers/_utils.sh
+set_source_and_root_dir
+
+require_commands pnpm
+
+print_color blue "Running linters..."
+
+success_flag=true
+pnpm exec eslint . || success_flag=false
+pnpm exec prettier --check . || success_flag=false
+pnpm exec tsc --noEmit || success_flag=false
+
+if $success_flag; then
+    success "Lint passed"
+else
+    fatal "Lint failed"
+fi
