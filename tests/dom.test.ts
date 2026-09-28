@@ -97,11 +97,11 @@ describe('apply', () => {
     expect(column.querySelector('.bd-col-count')).toBeNull()
   })
 
-  it("sits right after GitHub's counter and uses its total, which includes cards not in the DOM", () => {
+  it("sits right after GitHub's counter", () => {
     const column = document.querySelector('[data-board-column="Todo"]')!
     column.firstElementChild!.innerHTML =
       '<h2>Todo</h2><span data-component="CounterLabel">82</span><span>(82)</span>'
-    applyColumnStats(column, { name: 'Todo', total: 25, hidden: 40, dimmed: 0 })
+    applyColumnStats(column, { name: 'Todo', total: 82, hidden: 40, dimmed: 0 })
     const badge = column.querySelector('.bd-col-count')!
     expect(badge.textContent).toBe('42 shown')
     expect(badge.previousElementSibling?.getAttribute('data-component')).toBe('CounterLabel')

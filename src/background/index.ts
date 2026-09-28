@@ -1,9 +1,11 @@
-import { fetchEnrichment, parseKey, type ItemRef } from '../core/github'
+import { fetchEnrichment, fetchProjectSnapshot, parseKey, type ItemRef } from '../core/github'
+import { snapshotCacheKey, type ProjectRef, type SnapshotItem } from '../core/snapshot'
 import { loadToken, onTokenChange } from '../core/token'
 import type { Enrichment } from '../core/types'
-import type { EnrichResponse, Request } from './protocol'
+import type { EnrichResponse, Request, SnapshotResponse } from './protocol'
 
 const CACHE_TTL_MS = 10 * 60 * 1000
+const SNAPSHOT_TTL_MS = 5 * 60 * 1000
 const ERROR_BACKOFF_MS = 60 * 1000
 const BATCH_SIZE = 50
 const MAX_KEYS_PER_REQUEST = 500
@@ -69,6 +71,45 @@ async function enrich(keys: string[]): Promise<EnrichResponse> {
   return { items }
 }
 
+interface SnapshotCacheEntry {
+  items: SnapshotItem[]
+  fetchedAt: number
+}
+
+/** Every item on the project, so counts and rules can cover cards the board has not rendered. */
+async function snapshot(project: ProjectRef): Promise<SnapshotResponse> {
+  const token = await loadToken()
+  if (!token) return { error: 'no-token' }
+
+  const cacheKey = `snapshot:${snapshotCacheKey(project)}`
+  const stored = (await cache.get(cacheKey))[cacheKey] as SnapshotCacheEntry | undefined
+  if (stored && Date.now() - stored.fetchedAt < SNAPSHOT_TTL_MS) return { items: stored.items }
+  if (Date.now() - lastErrorAt < ERROR_BACKOFF_MS) return { error: 'api' }
+
+  try {
+    const items = await fetchProjectSnapshot(token, project)
+    await cache.set({ [cacheKey]: { items, fetchedAt: Date.now() } satisfies SnapshotCacheEntry })
+    return { items }
+  } catch (err) {
+    lastErrorAt = Date.now()
+    console.error('[board-declutter] project snapshot failed', err)
+    return { error: 'api' }
+  }
+}
+
+function isSnapshotRequest(message: unknown): message is { type: 'snapshot'; project: ProjectRef } {
+  if (typeof message !== 'object' || message === null) return false
+  const m = message as { type?: unknown; project?: Partial<ProjectRef> }
+  return (
+    m.type === 'snapshot' &&
+    typeof m.project === 'object' &&
+    m.project !== null &&
+    (m.project.kind === 'orgs' || m.project.kind === 'users') &&
+    typeof m.project.owner === 'string' &&
+    Number.isInteger(m.project.number)
+  )
+}
+
 function isEnrichRequest(message: unknown): message is { type: 'enrich'; keys: string[] } {
   if (typeof message !== 'object' || message === null) return false
   const m = message as Record<string, unknown>
@@ -84,6 +125,13 @@ chrome.runtime.onMessage.addListener((message: Request, sender, sendResponse) =>
       sendResponse({ items: {}, error: 'api' } satisfies EnrichResponse)
     })
     return true // keep the channel open for the async response
+  }
+  if (isSnapshotRequest(message)) {
+    snapshot(message.project).then(sendResponse, (err: unknown) => {
+      console.error('[board-declutter] project snapshot failed', err)
+      sendResponse({ error: 'api' } satisfies SnapshotResponse)
+    })
+    return true
   }
   if (message.type === 'open-options') {
     void chrome.runtime.openOptionsPage()

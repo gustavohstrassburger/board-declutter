@@ -77,19 +77,32 @@ export function collectColumnStats(column: Element): ColumnStats {
 }
 
 /** GitHub's own counter for the column ("82"), which covers cards the virtualiser has not put in the DOM. */
-function githubColumnCount(column: Element): number | undefined {
+export function githubColumnCount(column: Element): number | undefined {
   const label = column.querySelector('[data-component="CounterLabel"]')
   const n = Number(label?.textContent?.trim())
   return Number.isInteger(n) ? n : undefined
 }
 
-/** Shows how many cards are actually visible right after GitHub's counter, e.g. "82" then "36 shown".
- *  Cards the virtualiser has not loaded yet are assumed visible until they render and get evaluated. */
-export function applyColumnStats(column: Element, stats: ColumnStats): void {
+/** Stats are only worth showing when they cover the whole column: either from the project snapshot (when its
+ *  total agrees with GitHub's counter, i.e. the view has no filter we don't know about) or from the DOM once
+ *  every card shell is loaded. Otherwise the number would drift as the column lazy-loads. */
+export function chooseColumnStats(
+  dom: ColumnStats,
+  githubCount: number | undefined,
+  snapshot: ColumnStats | undefined,
+): ColumnStats | undefined {
+  if (githubCount === undefined) return undefined
+  if (snapshot && snapshot.total === githubCount) return snapshot
+  if (dom.total === githubCount) return dom
+  return undefined
+}
+
+/** Shows how many cards are actually visible right after GitHub's counter, e.g. "82" then "36 shown". */
+export function applyColumnStats(column: Element, stats: ColumnStats | undefined): void {
   const header = column.firstElementChild
   if (!header) return
   let badge = header.querySelector<HTMLElement>('.bd-col-count')
-  if (stats.hidden === 0) {
+  if (!stats || stats.hidden === 0) {
     badge?.remove()
     return
   }
@@ -100,8 +113,7 @@ export function applyColumnStats(column: Element, stats: ColumnStats): void {
     if (counter) counter.insertAdjacentElement('afterend', badge)
     else header.appendChild(badge)
   }
-  const total = githubColumnCount(column) ?? stats.total
-  setText(badge, `${Math.max(0, total - stats.hidden)} shown`)
+  setText(badge, `${Math.max(0, stats.total - stats.hidden)} shown`)
   const details = [`${stats.hidden} hidden`]
   if (stats.dimmed) details.push(`${stats.dimmed} dimmed`)
   badge.title = details.join(', ')

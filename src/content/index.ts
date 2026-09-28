@@ -1,19 +1,24 @@
 import { evaluate } from '../core/rules'
+import { cardFromSnapshot, columnField, projectFromPath } from '../core/snapshot'
 import { loadSettings, onSettingsChange, saveSettings } from '../core/settings'
 import type { Settings } from '../core/types'
 import {
   applyCollapsedColumns,
   applyColumnStats,
   applyDecision,
+  chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
   collectColumnStats,
+  githubColumnCount,
+  type ColumnStats,
   markAssigneeGroups,
   releasePlaceholders,
   resetStaleDecisions,
 } from './apply'
 import { cardKey, parseBoard, SELECTORS } from './dom'
 import { EnrichmentStore } from './enrichment'
+import { SnapshotStore } from './snapshot-store'
 import { ensureAssigneeSort } from './sort'
 import { Toolbar } from './toolbar'
 
@@ -22,6 +27,8 @@ let settings: Settings
 let version = 0
 let toolbar: Toolbar | undefined
 let scheduled = false
+
+const snapshot = new SnapshotStore(() => schedule())
 
 const enrichment = new EnrichmentStore((landed) => {
   const board = document.querySelector(SELECTORS.board)
@@ -56,22 +63,54 @@ function apply(): void {
   if (settings.groupByAssignee && ensureAssigneeSort(board)) return
 
   const entries = parseBoard(board)
+  const project = projectFromPath(location.pathname)
+  const items = project ? snapshot.get(project) : undefined
+
+  // The snapshot already carries author/draft/reviewer data; only ask per item for what it lacks.
   enrichment.request(
-    entries.map(({ card }) => cardKey(card)).filter((k): k is string => k !== undefined),
+    entries
+      .map(({ card }) => cardKey(card))
+      .filter((k): k is string => k !== undefined && snapshot.item(k) === undefined),
   )
 
   for (const { el, card } of entries) {
     const key = cardKey(card)
-    if (key) card.enrichment = enrichment.get(key)
+    if (key) card.enrichment = snapshot.item(key)?.enrichment ?? enrichment.get(key)
     applyDecision(el, evaluate(card, settings), version, key)
+  }
+
+  const columns = [...board.querySelectorAll(SELECTORS.column)]
+  const columnNames = columns.map((c) => c.getAttribute('data-board-column') ?? '')
+  const field = items ? columnField(items, columnNames) : undefined
+  const fromSnapshot = new Map<string, ColumnStats>()
+  if (items && field) {
+    for (const item of items) {
+      const card = cardFromSnapshot(item, field)
+      const stats = fromSnapshot.get(card.column) ?? {
+        name: card.column,
+        total: 0,
+        hidden: 0,
+        dimmed: 0,
+      }
+      const mode = evaluate(card, settings).mode
+      stats.total++
+      if (mode === 'hide') stats.hidden++
+      else if (mode === 'dim') stats.dimmed++
+      fromSnapshot.set(card.column, stats)
+    }
   }
 
   let total = 0
   let hidden = 0
   let dimmed = 0
-  for (const column of board.querySelectorAll(SELECTORS.column)) {
-    const stats = collectColumnStats(column)
-    applyColumnStats(column, stats)
+  for (const column of columns) {
+    const dom = collectColumnStats(column)
+    const stats =
+      chooseColumnStats(dom, githubColumnCount(column), fromSnapshot.get(dom.name)) ?? dom
+    applyColumnStats(
+      column,
+      stats === dom && dom.total !== githubColumnCount(column) ? undefined : stats,
+    )
     total += stats.total
     hidden += stats.hidden
     dimmed += stats.dimmed
@@ -81,7 +120,16 @@ function apply(): void {
   else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)
 
-  toolbar?.update({ total, hidden, dimmed, enrichment: enrichment.status })
+  toolbar?.update({ total, hidden, dimmed, enrichment: enrichmentStatus() })
+}
+
+/** The snapshot is the primary source; per-item enrichment only matters when the snapshot is unavailable. */
+function enrichmentStatus(): EnrichmentStore['status'] {
+  return snapshot.status === 'ok'
+    ? 'ok'
+    : enrichment.status === 'ok'
+      ? snapshot.status
+      : enrichment.status
 }
 
 function toolbarVisible(visible: boolean): void {

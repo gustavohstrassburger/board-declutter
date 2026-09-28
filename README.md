@@ -19,14 +19,14 @@ Every card on a board gets evaluated against a small set of rules. Each rule can
 
 On top of that:
 
-- **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible once the rules ran, with the hidden and dimmed breakdown on hover.
+- **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible once the rules ran, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number is only shown when it covers the whole column: with a token the extension evaluates every project item from the API; without one it waits until the column is fully loaded.
 - **Collapsed columns**: fold columns like "Done" into a thin strip.
 - **Compact mode**: single-line titles, no label chips.
 - **Group by assignee**: every column ordered by assignee with a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
 - **Floating toolbar**: quick toggles for the most used rules without opening the options page.
 - **Reason badge**: dimmed cards show why ("bot author · draft PR") in the bottom-right corner.
 
-Author, draft, reviewer and last-update data is not on the card, so those rules need a GitHub token. The extension batches items into one GraphQL request per 50 cards, caches results for 10 minutes in session storage and only ever talks to `api.github.com`. The token is kept in this browser profile's local extension storage, never synced, and never handed to the content script running on github.com. Without a token, the DOM-only rules still work and the toolbar says which rules are off.
+Author, draft, reviewer and last-update data is not on the card, so those rules need a GitHub token. With one, the extension loads the whole project through GraphQL (100 items per request, cached for 5 minutes in session storage), which also makes the column counts exact; cards from repositories the project query can't read fall back to per-item requests batched by 50. It only ever talks to `api.github.com`. The token is kept in this browser profile's local extension storage, never synced, and never handed to the content script running on github.com. Without a token, the DOM-only rules still work and the toolbar says which rules are off.
 
 ## Install
 
@@ -41,7 +41,7 @@ Recommended first setup for a team board:
 
 1. Put your GitHub login in **Your GitHub login**.
 2. List your team members and team labels (e.g. `team/feature-flags`).
-3. Add a token with read access to the repositories on the board (classic `repo` scope, or a fine-grained token with Issues and Pull requests read).
+3. Add a token with read access to the repositories on the board and to the project (classic `repo` + `read:project`, or a fine-grained token with Issues, Pull requests and Projects read).
 4. Set **Bot-authored PRs** and **Cards from other teams** to `dim` or `hide`, and collapse `Done`.
 
 `bin/build --zip` produces a zip for sharing or uploading to the Chrome Web Store.
