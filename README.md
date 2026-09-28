@@ -19,7 +19,7 @@ Every card on a board gets evaluated against a small set of rules. Each rule can
 
 On top of that:
 
-- **Column counts**: each column header shows how many cards are hidden or dimmed.
+- **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible once the rules ran, with the hidden and dimmed breakdown on hover.
 - **Collapsed columns**: fold columns like "Done" into a thin strip.
 - **Compact mode**: single-line titles, no label chips.
 - **Group by assignee**: every column ordered by assignee with a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
