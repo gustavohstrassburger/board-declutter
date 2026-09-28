@@ -283,9 +283,8 @@ describe('markAssigneeGroups', () => {
 })
 
 describe('applyStageTag', () => {
-  it('adds the chip after the header title group, updates it in place and removes it', () => {
+  it('appends the chip to the card box, updates it in place and removes it', () => {
     const el = document.querySelector('[data-board-card-id="231274630"]')!
-    const left = el.querySelector('[id^="board-card-header-title-"]')!.parentElement!
     applyStageTag(el, {
       days: 4,
       level: 'warn',
@@ -293,9 +292,10 @@ describe('applyStageTag', () => {
       title: '4 days in In Review (since 2026-09-24)',
     })
     const chip = el.querySelector<HTMLElement>('.bd-stage')!
-    expect(left.nextElementSibling).toBe(chip)
+    expect(chip.parentElement).toBe(el.firstElementChild)
     expect(chip.textContent).toBe('4d')
     expect(chip.dataset.level).toBe('warn')
+    expect(el.getAttribute('data-bd-stage')).toBe('4d')
 
     applyStageTag(el, { days: 9, level: 'stale', text: '9d', title: '9 days' })
     expect(el.querySelectorAll('.bd-stage')).toHaveLength(1)
@@ -303,13 +303,19 @@ describe('applyStageTag', () => {
 
     applyStageTag(el, undefined)
     expect(el.querySelector('.bd-stage')).toBeNull()
+    expect(el.hasAttribute('data-bd-stage')).toBe(false)
   })
 
-  it('does nothing on a card without a header row', () => {
-    document.body.innerHTML =
-      '<div data-board-card-id="1"><div><h3 id="board-card-title-1">t</h3></div></div>'
-    const el = document.querySelector('[data-board-card-id="1"]')!
+  it('skips the group header and does nothing on an empty placeholder', () => {
+    const el = document.querySelector('[data-board-card-id="231274630"]')!
+    const header = document.createElement('div')
+    header.className = 'bd-group-header'
+    el.prepend(header)
     applyStageTag(el, { days: 1, level: 'ok', text: '1d', title: '' })
-    expect(el.querySelector('.bd-stage')).toBeNull()
+    expect(el.querySelector('.bd-stage')?.parentElement).toBe(el.children[1])
+
+    const placeholder = document.querySelector('[data-board-card-id="248684323"]')!
+    applyStageTag(placeholder, { days: 1, level: 'ok', text: '1d', title: '' })
+    expect(placeholder.querySelector('.bd-stage')).toBeNull()
   })
 })

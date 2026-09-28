@@ -204,22 +204,25 @@ export function clearStageTags(root: ParentNode): void {
   for (const el of root.querySelectorAll('.bd-stage')) el.remove()
 }
 
-/** A chip in the card's header row, between "repo #number" and the avatars, saying how long the card has been
- *  in its column. It lives inside the React-owned box, so it disappears with it when the card is un-rendered. */
+/** A chip pinned to the top-right corner of the card's box, left of the avatars, saying how long the card
+ *  has been in its column. It is appended to the box rather than woven into GitHub's header row, so it does
+ *  not depend on that row's structure; it disappears with the box when the card is un-rendered. */
 export function applyStageTag(el: Element, tag: StageTag | undefined): void {
   let chip = el.querySelector<HTMLElement>('.bd-stage')
   if (!tag) {
     chip?.remove()
+    el.removeAttribute('data-bd-stage')
     return
   }
+  const box = [...el.children].find((c) => !c.classList.contains('bd-group-header'))
+  if (!box) return
   if (!chip) {
-    const left = el.querySelector('[id^="board-card-header-title-"]')?.parentElement
-    if (!left) return
     chip = document.createElement('span')
     chip.className = 'bd-stage'
-    left.insertAdjacentElement('afterend', chip)
+    box.appendChild(chip)
   }
   setText(chip, tag.text)
   if (chip.title !== tag.title) chip.title = tag.title
   if (chip.dataset.level !== tag.level) chip.dataset.level = tag.level
+  if (el.getAttribute('data-bd-stage') !== tag.text) el.setAttribute('data-bd-stage', tag.text)
 }
