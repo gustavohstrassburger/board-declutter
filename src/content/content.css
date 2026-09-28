@@ -15,7 +15,8 @@
   filter: none;
 }
 
-[data-board-card-id][data-bd-highlight] {
+/* On the card's own box, not the card element, so the group header above it stays unmarked. */
+[data-board-card-id][data-bd-highlight] > :not(.bd-group-header) {
   box-shadow: inset 3px 0 0 var(--fgColor-accent, #2f81f7);
 }
 
