@@ -86,12 +86,25 @@ describe('apply', () => {
     expect(el.hasAttribute('data-bd-reasons')).toBe(false)
   })
 
-  it('adds a column badge only when something is hidden or dimmed, and removes it after', () => {
+  it('shows the visible count only while something is hidden, and removes it after', () => {
     const column = document.querySelector('[data-board-column="Todo"]')!
     applyColumnStats(column, { name: 'Todo', total: 3, hidden: 2, dimmed: 1 })
-    expect(column.querySelector('.bd-col-count')?.textContent).toBe('2 hidden, 1 dimmed')
-    applyColumnStats(column, { name: 'Todo', total: 3, hidden: 0, dimmed: 0 })
+    const badge = column.querySelector<HTMLElement>('.bd-col-count')!
+    expect(badge.textContent).toBe('1 shown')
+    expect(badge.title).toBe('2 hidden, 1 dimmed')
+
+    applyColumnStats(column, { name: 'Todo', total: 3, hidden: 0, dimmed: 1 })
     expect(column.querySelector('.bd-col-count')).toBeNull()
+  })
+
+  it("sits right after GitHub's counter and uses its total, which includes cards not in the DOM", () => {
+    const column = document.querySelector('[data-board-column="Todo"]')!
+    column.firstElementChild!.innerHTML =
+      '<h2>Todo</h2><span data-component="CounterLabel">82</span><span>(82)</span>'
+    applyColumnStats(column, { name: 'Todo', total: 25, hidden: 40, dimmed: 0 })
+    const badge = column.querySelector('.bd-col-count')!
+    expect(badge.textContent).toBe('42 shown')
+    expect(badge.previousElementSibling?.getAttribute('data-component')).toBe('CounterLabel')
   })
 
   it('collapses columns case-insensitively and clearAll resets the board', () => {
