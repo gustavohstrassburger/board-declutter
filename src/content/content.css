@@ -68,11 +68,17 @@
 }
 
 /* Compact mode */
-html[data-bd-compact] [data-board-card-id] h3[id^='board-card-title-'] {
-  display: block;
+/* GitHub forces the title h3 to `display: inline !important`, so the single-line clipping goes on the
+   anchor around it, which is the block that actually has the card's width. */
+html[data-bd-compact] [data-board-card-id] a:has(> h3[id^='board-card-title-']) {
+  display: block !important;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+html[data-bd-compact] [data-board-card-id] h3[id^='board-card-title-'] {
   font-size: 13px;
 }
 
