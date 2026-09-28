@@ -75,16 +75,10 @@
 
 /* Column stats */
 .bd-col-count {
-  margin-left: 6px;
-  padding: 0 6px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 18px;
-  color: var(--fgColor-accent, #4493f8);
-  background: var(--bgColor-accent-muted, rgba(56, 139, 253, 0.15));
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--fgColor-muted, #8b949e);
   white-space: nowrap;
-  cursor: default;
 }
 
 /* Collapsed columns */

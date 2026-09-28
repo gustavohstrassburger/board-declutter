@@ -76,35 +76,24 @@ export function collectColumnStats(column: Element): ColumnStats {
   return stats
 }
 
-/** GitHub's own counter for the column ("82"), which covers cards the virtualiser has not put in the DOM. */
-function githubColumnCount(column: Element): number | undefined {
-  const label = column.querySelector('[data-component="CounterLabel"]')
-  const n = Number(label?.textContent?.trim())
-  return Number.isInteger(n) ? n : undefined
-}
-
-/** Shows how many cards are actually visible right after GitHub's counter, e.g. "82" then "36 shown".
- *  Cards the virtualiser has not loaded yet are assumed visible until they render and get evaluated. */
+/** Shows "N hidden" next to the column title. The header is static React output, so appending one span is safe. */
 export function applyColumnStats(column: Element, stats: ColumnStats): void {
   const header = column.firstElementChild
   if (!header) return
   let badge = header.querySelector<HTMLElement>('.bd-col-count')
-  if (stats.hidden === 0) {
+  if (stats.hidden === 0 && stats.dimmed === 0) {
     badge?.remove()
     return
   }
   if (!badge) {
     badge = document.createElement('span')
     badge.className = 'bd-col-count'
-    const counter = header.querySelector('[data-component="CounterLabel"]')
-    if (counter) counter.insertAdjacentElement('afterend', badge)
-    else header.appendChild(badge)
+    header.appendChild(badge)
   }
-  const total = githubColumnCount(column) ?? stats.total
-  setText(badge, `${Math.max(0, total - stats.hidden)} shown`)
-  const details = [`${stats.hidden} hidden`]
-  if (stats.dimmed) details.push(`${stats.dimmed} dimmed`)
-  badge.title = details.join(', ')
+  const parts: string[] = []
+  if (stats.hidden) parts.push(`${stats.hidden} hidden`)
+  if (stats.dimmed) parts.push(`${stats.dimmed} dimmed`)
+  setText(badge, parts.join(', '))
 }
 
 export function applyCollapsedColumns(root: ParentNode, collapsed: string[]): void {
