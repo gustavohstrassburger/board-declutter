@@ -1,6 +1,6 @@
 import { fetchEnrichment, fetchProjectSnapshot, parseKey, type ItemRef } from '../core/github'
 import { snapshotCacheKey, type ProjectRef, type SnapshotItem } from '../core/snapshot'
-import { loadToken, onTokenChange } from '../core/token'
+import { loadToken, migrateLegacyToken, onTokenChange } from '../core/token'
 import type { Enrichment } from '../core/types'
 import type { EnrichResponse, Request, SnapshotResponse } from './protocol'
 
@@ -158,6 +158,9 @@ for (const area of [chrome.storage.local, chrome.storage.session]) {
 chrome.runtime.onInstalled.addListener(() => {
   void cache.clear()
 })
+
+// Runs on every worker start; it is a no-op once the legacy field is gone.
+void migrateLegacyToken()
 
 onTokenChange(() => {
   lastErrorAt = 0

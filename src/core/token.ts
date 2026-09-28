@@ -17,3 +17,16 @@ export function onTokenChange(listener: () => void): void {
     if (TOKEN_KEY in changes) listener()
   })
 }
+
+/** Builds before 0.1.0 kept the token inside the synced settings object. Move it to local storage once and
+ *  scrub it from sync, so users who set it up early keep working and the token stops syncing. */
+export async function migrateLegacyToken(): Promise<boolean> {
+  const stored = await chrome.storage.sync.get('settings')
+  const settings = stored.settings as
+    (Record<string, unknown> & { githubToken?: unknown }) | undefined
+  if (!settings || typeof settings.githubToken !== 'string') return false
+  const { githubToken, ...rest } = settings
+  if (githubToken && !(await loadToken())) await saveToken(githubToken)
+  await chrome.storage.sync.set({ settings: rest })
+  return Boolean(githubToken)
+}
