@@ -129,6 +129,20 @@ export function describeErrors(errors: unknown): string {
   return `${first.type ?? 'error'}: ${first.message ?? ''}`
 }
 
+/** GitHub answers a token that lacks access with nulls, and only sometimes with an error entry. */
+export function describeMissingProject(
+  ref: ProjectRef,
+  ownerMissing: boolean,
+  errors: unknown,
+): string {
+  if (Array.isArray(errors) && errors.length) return describeErrors(errors)
+  const owner = ref.kind === 'orgs' ? `organization "${ref.owner}"` : `user "${ref.owner}"`
+  if (ownerMissing) {
+    return `the ${owner} is not visible to this token. For a classic token, authorize it for the organization under "Configure SSO"; a fine-grained token must have "${ref.owner}" as its resource owner.`
+  }
+  return `project #${ref.number} of ${owner} is not visible to this token. A classic token needs the "read:project" scope; a fine-grained token needs the organization permission "Projects: read".`
+}
+
 export async function fetchEnrichment(
   token: string,
   items: ItemRef[],
@@ -274,8 +288,12 @@ export async function fetchProjectSnapshot(
       >
       errors?: unknown[]
     }
-    const project = Object.values(body.data ?? {})[0]?.projectV2
-    if (!project) throw new Error(describeErrors(body.errors))
+    const owner = Object.values(body.data ?? {})[0]
+    const project = owner?.projectV2
+    if (!project)
+      throw new Error(
+        describeMissingProject(ref, owner === null || owner === undefined, body.errors),
+      )
     for (const node of project.items.nodes) {
       const item = parseSnapshotNode(node)
       if (item) items.push(item)

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { buildQuery, describeErrors, parseKey, parseResponse } from '../src/core/github'
+import {
+  buildQuery,
+  describeErrors,
+  describeMissingProject,
+  parseKey,
+  parseResponse,
+} from '../src/core/github'
 
 const refs = [
   parseKey('PostHog/posthog#1')!,
@@ -87,5 +93,21 @@ describe('describeErrors', () => {
     )
     expect(describeErrors([{ message: 'Something odd' }])).toBe('error: Something odd')
     expect(describeErrors(undefined)).toBe('GitHub returned no data')
+  })
+})
+
+describe('describeMissingProject', () => {
+  const ref = { kind: 'orgs' as const, owner: 'PostHog', number: 112 }
+
+  it('prefers an explicit error entry', () => {
+    expect(
+      describeMissingProject(ref, false, [{ type: 'INSUFFICIENT_SCOPES', message: 'x' }]),
+    ).toContain('read:project')
+  })
+
+  it('tells an invisible organization from an invisible project', () => {
+    expect(describeMissingProject(ref, true, [])).toContain('organization "PostHog" is not visible')
+    expect(describeMissingProject(ref, false, undefined)).toContain('project #112')
+    expect(describeMissingProject(ref, false, undefined)).toContain('Projects: read')
   })
 })
