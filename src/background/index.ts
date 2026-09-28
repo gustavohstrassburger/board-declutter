@@ -22,6 +22,11 @@ interface CacheEntry {
 const cache = chrome.storage.session
 
 let lastErrorAt = 0
+let lastErrorMessage = ''
+
+function messageOf(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
 
 async function readCache(keys: string[]): Promise<Map<string, Enrichment | null>> {
   const stored = await cache.get(keys.map((k) => `enrich:${k}`))
@@ -54,7 +59,8 @@ async function enrich(keys: string[]): Promise<EnrichResponse> {
     .map(parseKey)
     .filter((r): r is ItemRef => r !== undefined)
   if (missing.length === 0) return { items }
-  if (Date.now() - lastErrorAt < ERROR_BACKOFF_MS) return { items, error: 'api' }
+  if (Date.now() - lastErrorAt < ERROR_BACKOFF_MS)
+    return { items, error: 'api', message: lastErrorMessage }
 
   try {
     for (let i = 0; i < missing.length; i += BATCH_SIZE) {
@@ -67,8 +73,9 @@ async function enrich(keys: string[]): Promise<EnrichResponse> {
     }
   } catch (err) {
     lastErrorAt = Date.now()
+    lastErrorMessage = messageOf(err)
     console.error('[board-declutter] enrichment failed', err)
-    return { items, error: 'api' }
+    return { items, error: 'api', message: lastErrorMessage }
   }
   return { items }
 }
@@ -86,7 +93,8 @@ async function snapshot(project: ProjectRef): Promise<SnapshotResponse> {
   const cacheKey = `snapshot:${SNAPSHOT_SHAPE}:${snapshotCacheKey(project)}`
   const stored = (await cache.get(cacheKey))[cacheKey] as SnapshotCacheEntry | undefined
   if (stored && Date.now() - stored.fetchedAt < SNAPSHOT_TTL_MS) return { items: stored.items }
-  if (Date.now() - lastErrorAt < ERROR_BACKOFF_MS) return { error: 'api' }
+  if (Date.now() - lastErrorAt < ERROR_BACKOFF_MS)
+    return { error: 'api', message: lastErrorMessage }
 
   try {
     const items = await fetchProjectSnapshot(token, project)
@@ -94,8 +102,9 @@ async function snapshot(project: ProjectRef): Promise<SnapshotResponse> {
     return { items }
   } catch (err) {
     lastErrorAt = Date.now()
+    lastErrorMessage = messageOf(err)
     console.error('[board-declutter] project snapshot failed', err)
-    return { error: 'api' }
+    return { error: 'api', message: lastErrorMessage }
   }
 }
 
@@ -124,14 +133,14 @@ chrome.runtime.onMessage.addListener((message: Request, sender, sendResponse) =>
   if (isEnrichRequest(message)) {
     enrich(message.keys.slice(0, MAX_KEYS_PER_REQUEST)).then(sendResponse, (err: unknown) => {
       console.error('[board-declutter] enrichment failed', err)
-      sendResponse({ items: {}, error: 'api' } satisfies EnrichResponse)
+      sendResponse({ items: {}, error: 'api', message: messageOf(err) } satisfies EnrichResponse)
     })
     return true // keep the channel open for the async response
   }
   if (isSnapshotRequest(message)) {
     snapshot(message.project).then(sendResponse, (err: unknown) => {
       console.error('[board-declutter] project snapshot failed', err)
-      sendResponse({ error: 'api' } satisfies SnapshotResponse)
+      sendResponse({ error: 'api', message: messageOf(err) } satisfies SnapshotResponse)
     })
     return true
   }
@@ -164,5 +173,6 @@ void migrateLegacyToken()
 
 onTokenChange(() => {
   lastErrorAt = 0
+  lastErrorMessage = ''
   void cache.clear()
 })

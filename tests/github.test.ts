@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildQuery, parseKey, parseResponse } from '../src/core/github'
+import { buildQuery, describeErrors, parseKey, parseResponse } from '../src/core/github'
 
 const refs = [
   parseKey('PostHog/posthog#1')!,
@@ -69,5 +69,23 @@ describe('parseResponse', () => {
         updatedAt: '2026-08-01T00:00:00Z',
       },
     })
+  })
+})
+
+describe('describeErrors', () => {
+  it('explains missing scopes and missing projects, and falls back to the raw message', () => {
+    expect(
+      describeErrors([
+        {
+          type: 'INSUFFICIENT_SCOPES',
+          message: 'Your token has not been granted the required scopes.',
+        },
+      ]),
+    ).toContain('read:project')
+    expect(describeErrors([{ type: 'NOT_FOUND', message: 'Could not resolve' }])).toContain(
+      'lack access',
+    )
+    expect(describeErrors([{ message: 'Something odd' }])).toBe('error: Something odd')
+    expect(describeErrors(undefined)).toBe('GitHub returned no data')
   })
 })

@@ -13,6 +13,7 @@ export class SnapshotStore {
   private nextRequestAt = 0
   private inFlight = false
   status: 'ok' | 'no-token' | 'error' | 'pending' = 'pending'
+  errorMessage = ''
 
   constructor(
     private onUpdate: () => void,
@@ -50,6 +51,10 @@ export class SnapshotStore {
     this.inFlight = false
     if (!response || response.error || !response.items) {
       this.status = response?.error === 'no-token' ? 'no-token' : 'error'
+      this.errorMessage =
+        response?.error === 'no-token'
+          ? ''
+          : (response?.message ?? 'no response from the extension worker')
       this.nextRequestAt = this.now() + SNAPSHOT_RETRY_MS
     } else {
       this.status = 'ok'

@@ -17,6 +17,7 @@ export class EnrichmentStore {
   private inFlight = new Set<string>()
   private retryAt = new Map<string, number>()
   status: 'ok' | 'no-token' | 'error' | 'pending' = 'ok'
+  errorMessage = ''
 
   constructor(
     private onUpdate: (keys: Set<string>) => void,
@@ -59,8 +60,10 @@ export class EnrichmentStore {
 
     if (!response) {
       this.status = 'error'
+      this.errorMessage = 'no response from the extension worker'
     } else {
       this.status = response.error === 'no-token' ? 'no-token' : response.error ? 'error' : 'ok'
+      this.errorMessage = response.error === 'api' ? (response.message ?? '') : ''
       for (const [k, value] of Object.entries(response.items)) {
         this.cache.set(k, { value, fetchedAt })
         landed.add(k)

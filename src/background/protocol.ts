@@ -10,6 +10,8 @@ export interface EnrichRequest {
 export interface EnrichResponse {
   items: Record<string, Enrichment>
   error?: 'no-token' | 'api'
+  /** Human-readable detail for 'api' errors, shown in the toolbar tooltip. */
+  message?: string
 }
 
 export interface SnapshotRequest {
@@ -20,6 +22,7 @@ export interface SnapshotRequest {
 export interface SnapshotResponse {
   items?: SnapshotItem[]
   error?: 'no-token' | 'api'
+  message?: string
 }
 
 export interface OpenOptionsRequest {

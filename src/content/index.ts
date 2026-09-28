@@ -147,7 +147,13 @@ function apply(): void {
   else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)
 
-  toolbar?.update({ total, hidden, dimmed, enrichment: enrichmentStatus() })
+  toolbar?.update({
+    total,
+    hidden,
+    dimmed,
+    enrichment: enrichmentStatus(),
+    errorMessage: snapshot.errorMessage || enrichment.errorMessage,
+  })
 }
 
 /** The snapshot is the primary source; per-item enrichment only matters when the snapshot is unavailable. */

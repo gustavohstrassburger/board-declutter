@@ -94,6 +94,41 @@ export function parseResponse(
   return out
 }
 
+/** Turns an HTTP failure into a message a person can act on. GitHub explains SSO and scope problems in headers. */
+async function assertOk(res: Response): Promise<void> {
+  if (res.ok) return
+  const sso = res.headers.get('x-github-sso')
+  if (res.status === 403 && sso?.startsWith('required')) {
+    throw new Error(
+      '403: the token is not authorized for this organization. Open github.com/settings/tokens, click "Configure SSO" next to it and authorize the org.',
+    )
+  }
+  if (res.status === 401)
+    throw new Error(
+      '401: the token was rejected. Check it was pasted completely and has not expired.',
+    )
+  let detail = ''
+  try {
+    detail = ((await res.json()) as { message?: string }).message ?? ''
+  } catch {
+    // no body
+  }
+  throw new Error(`${res.status}${detail ? `: ${detail}` : ''}`)
+}
+
+/** GraphQL errors come as a list; the first message and type are enough to tell scopes from typos. */
+export function describeErrors(errors: unknown): string {
+  const list = Array.isArray(errors) ? (errors as { type?: string; message?: string }[]) : []
+  const first = list[0]
+  if (!first) return 'GitHub returned no data'
+  if (first.type === 'INSUFFICIENT_SCOPES') {
+    return `insufficient scopes: ${first.message ?? ''} A classic token needs "repo" and "read:project".`
+  }
+  if (first.type === 'NOT_FOUND')
+    return `not found: ${first.message ?? ''} The token may lack access to the project or organization.`
+  return `${first.type ?? 'error'}: ${first.message ?? ''}`
+}
+
 export async function fetchEnrichment(
   token: string,
   items: ItemRef[],
@@ -103,14 +138,13 @@ export async function fetchEnrichment(
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ query: buildQuery(items) }),
   })
-  if (!res.ok) throw new Error(`GitHub API ${res.status}`)
+  await assertOk(res)
   const body = (await res.json()) as {
     data?: Record<string, Record<string, GraphQLItem | null>>
     errors?: unknown[]
   }
   // Partial errors (e.g. one repo the token can't read) still come with data for the rest.
-  if (!body.data)
-    throw new Error(`GitHub API returned no data: ${JSON.stringify(body.errors ?? body)}`)
+  if (!body.data) throw new Error(describeErrors(body.errors))
   return parseResponse(items, body.data)
 }
 
@@ -225,7 +259,7 @@ export async function fetchProjectSnapshot(
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, variables: { owner: ref.owner, number: ref.number, after } }),
     })
-    if (!res.ok) throw new Error(`GitHub API ${res.status}`)
+    await assertOk(res)
     const body = (await res.json()) as {
       data?: Record<
         string,
@@ -241,8 +275,7 @@ export async function fetchProjectSnapshot(
       errors?: unknown[]
     }
     const project = Object.values(body.data ?? {})[0]?.projectV2
-    if (!project)
-      throw new Error(`GitHub API returned no project: ${JSON.stringify(body.errors ?? body)}`)
+    if (!project) throw new Error(describeErrors(body.errors))
     for (const node of project.items.nodes) {
       const item = parseSnapshotNode(node)
       if (item) items.push(item)

@@ -6,6 +6,7 @@ export interface ToolbarState {
   hidden: number
   dimmed: number
   enrichment: 'ok' | 'no-token' | 'error' | 'pending'
+  errorMessage?: string
 }
 
 const MODE_LABEL: Record<Mode, string> = { show: 'show', dim: 'dim', hide: 'hide' }
@@ -98,7 +99,9 @@ export class Toolbar {
     this.summary.title =
       state.enrichment === 'no-token'
         ? 'Add a GitHub token in the extension options to enable bot, draft, stale and team-author rules.'
-        : ''
+        : state.enrichment === 'error'
+          ? `GitHub API error: ${state.errorMessage || 'see the extension service worker console'}`
+          : ''
   }
 
   private render(): void {
