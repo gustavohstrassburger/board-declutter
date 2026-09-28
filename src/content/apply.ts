@@ -1,4 +1,4 @@
-import type { Decision } from '../core/types'
+import type { Card, Decision } from '../core/types'
 import { isRendered, SELECTORS } from './dom'
 
 /** Decisions are stamped with the settings version they were made under.
@@ -111,4 +111,45 @@ export function clearAll(root: ParentNode): void {
   for (const el of root.querySelectorAll('[data-bd-collapsed]'))
     el.removeAttribute('data-bd-collapsed')
   document.documentElement.removeAttribute('data-bd-compact')
+}
+
+export const UNASSIGNED_GROUP = 'Unassigned'
+
+export function assigneeGroup(card: Card): string {
+  return card.assignees.length ? card.assignees.join(', ') : UNASSIGNED_GROUP
+}
+
+/** Label the first visible card of every run of equal assignees inside each column.
+ *  GitHub does the actual ordering (see `sort.ts`); placeholders are skipped and re-evaluated once rendered. */
+export function markAssigneeGroups(root: ParentNode, entries: { el: Element; card: Card }[]): void {
+  const byEl = new Map(entries.map((e) => [e.el, e.card]))
+  for (const column of root.querySelectorAll(SELECTORS.column)) {
+    let previous: string | undefined
+    for (const el of column.querySelectorAll(SELECTORS.card)) {
+      const card = byEl.get(el)
+      if (!card) continue
+      if (el.getAttribute('data-bd-mode') === 'hide') {
+        el.removeAttribute('data-bd-group')
+        continue
+      }
+      const group = assigneeGroup(card)
+      if (group !== previous) setGroup(el, group)
+      else setGroup(el, undefined)
+      previous = group
+    }
+  }
+}
+
+/** The attribute is mirrored onto the inner box because that is where the CSS draws the label (see content.css). */
+function setGroup(el: Element, group: string | undefined): void {
+  for (const target of [el, el.firstElementChild]) {
+    if (!target) continue
+    if (group === undefined) target.removeAttribute('data-bd-group')
+    else if (target.getAttribute('data-bd-group') !== group)
+      target.setAttribute('data-bd-group', group)
+  }
+}
+
+export function clearAssigneeGroups(root: ParentNode): void {
+  for (const el of root.querySelectorAll('[data-bd-group]')) el.removeAttribute('data-bd-group')
 }

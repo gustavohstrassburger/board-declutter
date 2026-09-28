@@ -46,6 +46,8 @@ export interface Settings {
   /** Column names to collapse entirely (e.g. "Done"). */
   collapsedColumns: string[]
   compact: boolean
+  /** Sort every column by assignee (GitHub's own sort, via the URL) and label the first card of each run. */
+  groupByAssignee: boolean
   /** Your GitHub login: cards you author, are assigned to or review get highlighted. */
   me: string
 }

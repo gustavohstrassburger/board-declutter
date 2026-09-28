@@ -31,6 +31,7 @@ function fill(settings: Settings): void {
   field<HTMLInputElement>('me').value = settings.me
   field<HTMLInputElement>('staleDays').value = String(settings.staleDays)
   field<HTMLInputElement>('compact').checked = settings.compact
+  field<HTMLInputElement>('groupByAssignee').checked = settings.groupByAssignee
   for (const name of [
     'botMode',
     'draftMode',
@@ -49,6 +50,7 @@ function read(current: Settings): Settings {
     me: field<HTMLInputElement>('me').value.trim(),
     staleDays: Math.max(0, Number(field<HTMLInputElement>('staleDays').value) || 0),
     compact: field<HTMLInputElement>('compact').checked,
+    groupByAssignee: field<HTMLInputElement>('groupByAssignee').checked,
   }
   for (const name of [
     'botMode',

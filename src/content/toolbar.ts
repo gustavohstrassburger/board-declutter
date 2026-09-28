@@ -55,6 +55,11 @@ export class Toolbar {
       () => (this.settings.compact ? 'Compact ✓' : 'Compact'),
       () => ({ compact: !this.settings.compact }),
     )
+    this.addToggle(
+      'groupByAssignee',
+      () => (this.settings.groupByAssignee ? 'By assignee ✓' : 'By assignee'),
+      () => ({ groupByAssignee: !this.settings.groupByAssignee }),
+    )
 
     const options = document.createElement('button')
     options.type = 'button'

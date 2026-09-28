@@ -6,12 +6,15 @@ import {
   applyColumnStats,
   applyDecision,
   clearAll,
+  clearAssigneeGroups,
   collectColumnStats,
+  markAssigneeGroups,
   releasePlaceholders,
   resetStaleDecisions,
 } from './apply'
 import { cardKey, parseBoard, SELECTORS } from './dom'
 import { EnrichmentStore } from './enrichment'
+import { ensureAssigneeSort } from './sort'
 import { Toolbar } from './toolbar'
 
 let settings: Settings
@@ -50,6 +53,7 @@ function apply(): void {
   }
 
   resetStaleDecisions(board, version)
+  if (settings.groupByAssignee && ensureAssigneeSort(board)) return
 
   const entries = parseBoard(board)
   enrichment.request(
@@ -73,6 +77,8 @@ function apply(): void {
     dimmed += stats.dimmed
   }
   applyCollapsedColumns(board, settings.collapsedColumns)
+  if (settings.groupByAssignee) markAssigneeGroups(board, entries)
+  else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)
 
   toolbar?.update({ total, hidden, dimmed, enrichment: enrichment.status })

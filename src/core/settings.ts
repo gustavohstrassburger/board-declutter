@@ -22,6 +22,7 @@ export const DEFAULT_SETTINGS: Settings = {
   titlePatterns: [],
   collapsedColumns: [],
   compact: false,
+  groupByAssignee: false,
   me: '',
 }
 

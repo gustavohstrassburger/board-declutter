@@ -22,6 +22,7 @@ On top of that:
 - **Column counts**: each column header shows how many cards are hidden or dimmed.
 - **Collapsed columns**: fold columns like "Done" into a thin strip.
 - **Compact mode**: single-line titles, no label chips.
+- **Group by assignee**: every column ordered by assignee with a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
 - **Floating toolbar**: quick toggles for the most used rules without opening the options page.
 - **Reason badge**: dimmed cards show why ("bot author · draft PR") in the bottom-right corner.
 

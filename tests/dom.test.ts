@@ -4,7 +4,9 @@ import {
   applyColumnStats,
   applyDecision,
   clearAll,
+  clearAssigneeGroups,
   collectColumnStats,
+  markAssigneeGroups,
   releasePlaceholders,
   resetStaleDecisions,
   setText,
@@ -186,5 +188,45 @@ describe('parseCard link safety', () => {
       type: 'draft',
       repo: undefined,
     })
+  })
+})
+
+describe('markAssigneeGroups', () => {
+  function board(assignees: (string[] | null)[]): void {
+    document.body.innerHTML = `<div id="project-items-region"><div data-board-column="C"><div>C</div><div>${assignees
+      .map((a, i) =>
+        a === null
+          ? `<div data-board-card-id="${i}"></div>`
+          : `<div data-board-card-id="${i}"><a href="https://github.com/o/r/issues/${i}"><h3 id="board-card-title-${i}">t${i}</h3></a>${
+              a.length ? `<figure><figcaption>Assignees: ${a.join(', ')}</figcaption></figure>` : ''
+            }</div>`,
+      )
+      .join('')}</div></div></div>`
+  }
+  const groups = () =>
+    [...document.querySelectorAll('[data-board-card-id]')].map((el) =>
+      el.getAttribute('data-bd-group'),
+    )
+
+  it('labels the first card of each run, skipping placeholders and hidden cards', () => {
+    board([['ann'], ['ann'], null, ['bob'], [], [], ['ann']])
+    const entries = parseBoard(document)
+    const hidden = document.querySelector('[data-board-card-id="3"]')!
+    applyDecision(hidden, { mode: 'hide', highlight: false, reasons: [] }, 1)
+    markAssigneeGroups(document, entries)
+    expect(groups()).toEqual(['ann', null, null, null, 'Unassigned', null, 'ann'])
+  })
+
+  it('joins several assignees into one label and clears everything on demand', () => {
+    board([
+      ['ann', 'bob'],
+      ['ann', 'bob'],
+    ])
+    markAssigneeGroups(document, parseBoard(document))
+    expect(groups()).toEqual(['ann, bob', null])
+    expect(document.querySelector('[data-board-card-id="0"] > [data-bd-group]')).not.toBeNull()
+    clearAssigneeGroups(document)
+    expect(groups()).toEqual([null, null])
+    expect(document.querySelector('[data-bd-group]')).toBeNull()
   })
 })
