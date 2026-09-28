@@ -21,24 +21,32 @@ export function isRendered(el: Element): boolean {
   return el.children.length > 0
 }
 
-function figureFields(el: Element): Map<string, { figure: Element; values: string[] }> {
-  const fields = new Map<string, { figure: Element; values: string[] }>()
+interface Field {
+  figure: Element
+  values: string[]
+  /** login → avatar URL, for fields rendered as avatar stacks */
+  avatars: Record<string, string>
+}
+
+function figureFields(el: Element): Map<string, Field> {
+  const fields = new Map<string, Field>()
   for (const figure of el.querySelectorAll('figure')) {
     const caption = figure.querySelector('figcaption')?.textContent ?? ''
     const colon = caption.indexOf(':')
     if (colon === -1) continue
     const name = caption.slice(0, colon).trim().toLowerCase()
-    const avatars = [...figure.querySelectorAll<HTMLImageElement>(SELECTORS.avatar)].map(
-      (i) => i.alt,
-    )
-    const values = avatars.length
-      ? avatars
+    const avatars: Record<string, string> = {}
+    for (const img of figure.querySelectorAll<HTMLImageElement>(SELECTORS.avatar))
+      avatars[img.alt] = img.src
+    const logins = Object.keys(avatars)
+    const values = logins.length
+      ? logins
       : caption
           .slice(colon + 1)
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean)
-    fields.set(name, { figure, values })
+    fields.set(name, { figure, values, avatars })
     figure.setAttribute('data-bd-field', name)
   }
   return fields
@@ -93,6 +101,7 @@ export function parseCard(el: Element): Card | null {
     number: link ? Number(link[4]) : undefined,
     type,
     assignees: fields.get('assignees')?.values ?? [],
+    avatars: fields.get('assignees')?.avatars,
     labels: fields.get('labels')?.values ?? [],
   }
 }

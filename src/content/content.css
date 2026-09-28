@@ -41,27 +41,35 @@
   text-overflow: ellipsis;
 }
 
-/* Assignee groups. GitHub already uses the card's own ::before for its coloured "sash", so the label is drawn
-   by the inner box's ::before (the attribute is mirrored onto it) and floats in the extra top margin. */
-[data-board-card-id][data-bd-group] {
-  margin-top: 26px !important;
-}
-
-[data-board-card-id][data-bd-group] > [data-bd-group] {
-  position: relative;
-}
-
-[data-board-card-id][data-bd-group] > [data-bd-group]::before {
-  content: attr(data-bd-group);
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -22px;
+/* Assignee groups: a header element in front of the card's own box (which draws the border and background),
+   so it reads as a section title above the card. */
+.bd-group-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 6px;
+  padding-bottom: 3px;
   font-size: 11px;
   font-weight: 600;
-  line-height: 1.6;
+  line-height: 16px;
   color: var(--fgColor-muted, #8b949e);
   border-bottom: 1px solid var(--borderColor-muted, #21262d);
+  pointer-events: none;
+}
+
+.bd-group-header img {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.bd-group-header img + img {
+  margin-left: -6px;
+}
+
+.bd-group-header span {
+  margin-left: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

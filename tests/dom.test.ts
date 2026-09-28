@@ -29,6 +29,7 @@ describe('parseCard', () => {
       number: 13147,
       type: 'issue',
       assignees: ['neilkakkar'],
+      avatars: { neilkakkar: 'https://avatars.githubusercontent.com/u/1' },
       labels: ['feature/cohorts', 'team/feature-flags'],
     })
   })
@@ -210,9 +211,16 @@ describe('markAssigneeGroups', () => {
       .map((a, i) =>
         a === null
           ? `<div data-board-card-id="${i}"></div>`
-          : `<div data-board-card-id="${i}"><a href="https://github.com/o/r/issues/${i}"><h3 id="board-card-title-${i}">t${i}</h3></a>${
-              a.length ? `<figure><figcaption>Assignees: ${a.join(', ')}</figcaption></figure>` : ''
-            }</div>`,
+          : `<div data-board-card-id="${i}"><div><a href="https://github.com/o/r/issues/${i}"><h3 id="board-card-title-${i}">t${i}</h3></a>${
+              a.length
+                ? `<figure><figcaption>Assignees: ${a.join(', ')}</figcaption>${a
+                    .map(
+                      (x) =>
+                        `<img data-testid="github-avatar" alt="${x}" src="https://avatars.example/${x}.png">`,
+                    )
+                    .join('')}</figure>`
+                : ''
+            }</div></div>`,
       )
       .join('')}</div></div></div>`
   }
@@ -220,6 +228,13 @@ describe('markAssigneeGroups', () => {
     [...document.querySelectorAll('[data-board-card-id]')].map((el) =>
       el.getAttribute('data-bd-group'),
     )
+  const headers = () =>
+    [...document.querySelectorAll('[data-board-card-id]')].map((el) => {
+      const h = el.querySelector(':scope > .bd-group-header')
+      return h
+        ? `${h.querySelectorAll('img').length}:${h.querySelector('span')?.textContent}`
+        : null
+    })
 
   it('labels the first card of each run, skipping placeholders and hidden cards', () => {
     board([['ann'], ['ann'], null, ['bob'], [], [], ['ann']])
@@ -228,18 +243,32 @@ describe('markAssigneeGroups', () => {
     applyDecision(hidden, { mode: 'hide', highlight: false, reasons: [] }, 1)
     markAssigneeGroups(document, entries)
     expect(groups()).toEqual(['ann', null, null, null, 'Unassigned', null, 'ann'])
+    expect(headers()).toEqual(['1:ann', null, null, null, '0:Unassigned', null, '1:ann'])
   })
 
-  it('joins several assignees into one label and clears everything on demand', () => {
+  it('puts the header with every avatar in front of the card box, and clears everything on demand', () => {
     board([
       ['ann', 'bob'],
       ['ann', 'bob'],
     ])
     markAssigneeGroups(document, parseBoard(document))
-    expect(groups()).toEqual(['ann, bob', null])
-    expect(document.querySelector('[data-board-card-id="0"] > [data-bd-group]')).not.toBeNull()
+    expect(headers()).toEqual(['2:ann, bob', null])
+    const card = document.querySelector('[data-board-card-id="0"]')!
+    expect(card.firstElementChild?.className).toBe('bd-group-header')
+    expect(card.querySelector('.bd-group-header img')?.getAttribute('src')).toBe(
+      'https://avatars.example/ann.png',
+    )
     clearAssigneeGroups(document)
     expect(groups()).toEqual([null, null])
-    expect(document.querySelector('[data-bd-group]')).toBeNull()
+    expect(document.querySelector('.bd-group-header')).toBeNull()
+  })
+
+  it('removes the header from a card that turned into a placeholder', () => {
+    board([['ann']])
+    markAssigneeGroups(document, parseBoard(document))
+    const card = document.querySelector('[data-board-card-id="0"]')!
+    card.lastElementChild!.remove() // GitHub un-rendered it; only our header is left
+    markAssigneeGroups(document, [])
+    expect(card.children).toHaveLength(0)
   })
 })

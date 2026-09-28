@@ -150,29 +150,51 @@ export function markAssigneeGroups(root: ParentNode, entries: { el: Element; car
     let previous: string | undefined
     for (const el of column.querySelectorAll(SELECTORS.card)) {
       const card = byEl.get(el)
-      if (!card) continue
-      if (el.getAttribute('data-bd-mode') === 'hide') {
-        el.removeAttribute('data-bd-group')
+      if (!card || el.getAttribute('data-bd-mode') === 'hide') {
+        setGroup(el, undefined)
         continue
       }
       const group = assigneeGroup(card)
-      if (group !== previous) setGroup(el, group)
-      else setGroup(el, undefined)
+      setGroup(el, group !== previous ? card : undefined)
       previous = group
     }
   }
 }
 
-/** The attribute is mirrored onto the inner box because that is where the CSS draws the label (see content.css). */
-function setGroup(el: Element, group: string | undefined): void {
-  for (const target of [el, el.firstElementChild]) {
-    if (!target) continue
-    if (group === undefined) target.removeAttribute('data-bd-group')
-    else if (target.getAttribute('data-bd-group') !== group)
-      target.setAttribute('data-bd-group', group)
+/** A small header inserted as the card's first child: the assignees' avatars and the group name.
+ *  React only ever touches its own inner box, so a sibling in front of it survives re-renders. */
+function setGroup(el: Element, card: Card | undefined): void {
+  let header = el.querySelector<HTMLElement>(':scope > .bd-group-header')
+  if (!card) {
+    el.removeAttribute('data-bd-group')
+    header?.remove()
+    return
   }
+  const group = assigneeGroup(card)
+  if (el.getAttribute('data-bd-group') === group && header) return
+  el.setAttribute('data-bd-group', group)
+  if (!header) {
+    header = document.createElement('div')
+    header.className = 'bd-group-header'
+    el.prepend(header)
+  }
+  header.replaceChildren()
+  for (const login of card.assignees) {
+    const src = card.avatars?.[login]
+    if (!src) continue
+    const img = document.createElement('img')
+    img.src = src
+    img.alt = ''
+    img.width = 16
+    img.height = 16
+    header.appendChild(img)
+  }
+  const name = document.createElement('span')
+  name.textContent = group
+  header.appendChild(name)
 }
 
 export function clearAssigneeGroups(root: ParentNode): void {
   for (const el of root.querySelectorAll('[data-bd-group]')) el.removeAttribute('data-bd-group')
+  for (const el of root.querySelectorAll('.bd-group-header')) el.remove()
 }

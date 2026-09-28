@@ -10,6 +10,8 @@ export interface Card {
   number?: number
   type: 'issue' | 'pull_request' | 'draft'
   assignees: string[]
+  /** Avatar URL per assignee login, when the card shows them. */
+  avatars?: Record<string, string>
   labels: string[]
   enrichment?: Enrichment
 }
