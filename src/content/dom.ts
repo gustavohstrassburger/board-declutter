@@ -16,9 +16,11 @@ export function cardKey(card: Pick<Card, 'repo' | 'number'>): string | undefined
   return card.repo && card.number ? `${card.repo}#${card.number}` : undefined
 }
 
-/** Board cards are virtualised: off-screen ones are empty placeholders that only carry an aria-label. */
+/** Board cards are virtualised: off-screen ones are empty placeholders that only carry an aria-label, and while
+ *  a page of items loads GitHub fills the shell with a skeleton (a div with a span, no title) for seconds.
+ *  Only a card with its real title is safe to evaluate: judging the skeleton would hide it for good. */
 export function isRendered(el: Element): boolean {
-  return el.children.length > 0
+  return el.querySelector(SELECTORS.cardTitle) !== null
 }
 
 interface Field {

@@ -11,6 +11,7 @@ import {
   chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
+  clearDecision,
   collectColumnStats,
   githubColumnCount,
   type ColumnStats,
@@ -18,7 +19,7 @@ import {
   releasePlaceholders,
   resetStaleDecisions,
 } from './apply'
-import { cardKey, parseBoard, SELECTORS } from './dom'
+import { cardKey, isRendered, parseBoard, SELECTORS } from './dom'
 import { EnrichmentStore } from './enrichment'
 import { SnapshotStore } from './snapshot-store'
 import { ensureAssigneeSort } from './sort'
@@ -83,12 +84,29 @@ function apply(): void {
   for (const { el, card } of entries) {
     const key = cardKey(card)
     const item = key ? snapshot.item(key) : undefined
+    if (item) {
+      // The DOM only shows fields the view displays; the API knows them all. The DOM wins when it has a value,
+      // since it is fresher than a snapshot up to five minutes old.
+      if (card.assignees.length === 0) card.assignees = item.assignees
+      if (card.labels.length === 0) card.labels = item.labels
+    }
     if (key) card.enrichment = item?.enrichment ?? enrichment.get(key)
     applyDecision(el, evaluate(card, settings), version, key)
     applyStageTag(
       el,
       stageTag(card, field ? item?.fieldUpdatedAt[field] : undefined, settings, now),
     )
+  }
+
+  // A hidden card is never rendered again, so a wrong "hide" would stick. With the snapshot we can re-judge
+  // hidden placeholders from data alone and release the ones that should be visible.
+  if (field) {
+    for (const el of board.querySelectorAll('[data-bd-mode="hide"][data-bd-key]')) {
+      if (isRendered(el)) continue
+      const item = snapshot.item(el.getAttribute('data-bd-key') ?? '')
+      if (item && evaluate(cardFromSnapshot(item, field), settings).mode !== 'hide')
+        clearDecision(el)
+    }
   }
 
   const fromSnapshot = new Map<string, ColumnStats>()

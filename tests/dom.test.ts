@@ -39,6 +39,14 @@ describe('parseCard', () => {
     expect(parseCard(document.querySelector('[data-board-card-id="248684323"]')!)).toBeNull()
   })
 
+  it('skips the loading skeleton GitHub puts in a card while a page of items loads', () => {
+    document.body.innerHTML =
+      '<div data-board-column="C"><div><div data-board-card-id="1" aria-label="fix(flags): x"><div><span></span></div></div></div></div>'
+    const el = document.querySelector('[data-board-card-id="1"]')!
+    expect(parseCard(el)).toBeNull()
+    expect(parseBoard(document)).toEqual([])
+  })
+
   it('treats items without a link as draft items', () => {
     expect(parseCard(document.querySelector('[data-board-card-id="99"]')!)).toMatchObject({
       type: 'draft',
