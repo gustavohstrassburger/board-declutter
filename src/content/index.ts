@@ -94,7 +94,7 @@ function apply(): void {
     applyDecision(el, evaluate(card, settings), version, key)
     applyStageTag(
       el,
-      stageTag(card, field ? item?.fieldUpdatedAt[field] : undefined, settings, now),
+      stageTag(card, field ? item?.fieldUpdatedAt?.[field] : undefined, settings, now),
     )
   }
 

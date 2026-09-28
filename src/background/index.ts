@@ -6,6 +6,8 @@ import type { EnrichResponse, Request, SnapshotResponse } from './protocol'
 
 const CACHE_TTL_MS = 10 * 60 * 1000
 const SNAPSHOT_TTL_MS = 5 * 60 * 1000
+/** Bump when SnapshotItem changes shape so a cached snapshot from an older build is never reused. */
+const SNAPSHOT_SHAPE = 2
 const ERROR_BACKOFF_MS = 60 * 1000
 const BATCH_SIZE = 50
 const MAX_KEYS_PER_REQUEST = 500
@@ -81,7 +83,7 @@ async function snapshot(project: ProjectRef): Promise<SnapshotResponse> {
   const token = await loadToken()
   if (!token) return { error: 'no-token' }
 
-  const cacheKey = `snapshot:${snapshotCacheKey(project)}`
+  const cacheKey = `snapshot:${SNAPSHOT_SHAPE}:${snapshotCacheKey(project)}`
   const stored = (await cache.get(cacheKey))[cacheKey] as SnapshotCacheEntry | undefined
   if (stored && Date.now() - stored.fetchedAt < SNAPSHOT_TTL_MS) return { items: stored.items }
   if (Date.now() - lastErrorAt < ERROR_BACKOFF_MS) return { error: 'api' }
@@ -151,6 +153,11 @@ for (const area of [chrome.storage.local, chrome.storage.session]) {
     void area.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' })
   }
 }
+
+// A new build may read the cache differently; start clean.
+chrome.runtime.onInstalled.addListener(() => {
+  void cache.clear()
+})
 
 onTokenChange(() => {
   lastErrorAt = 0
