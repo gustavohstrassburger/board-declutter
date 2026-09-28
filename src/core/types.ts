@@ -50,6 +50,11 @@ export interface Settings {
   compact: boolean
   /** Sort every column by assignee (GitHub's own sort, via the URL) and label the first card of each run. */
   groupByAssignee: boolean
+  /** Columns where each card shows how long it has been sitting there. Needs a token. */
+  stageColumns: string[]
+  /** Days in the column after which the tag turns amber, then red. */
+  stageWarnDays: number
+  stageStaleDays: number
   /** Your GitHub login: cards you author, are assigned to or review get highlighted. */
   me: string
 }

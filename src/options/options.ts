@@ -30,6 +30,8 @@ for (const select of form.querySelectorAll<HTMLSelectElement>('select[data-mode]
 function fill(settings: Settings): void {
   field<HTMLInputElement>('me').value = settings.me
   field<HTMLInputElement>('staleDays').value = String(settings.staleDays)
+  field<HTMLInputElement>('stageWarnDays').value = String(settings.stageWarnDays)
+  field<HTMLInputElement>('stageStaleDays').value = String(settings.stageStaleDays)
   field<HTMLInputElement>('compact').checked = settings.compact
   field<HTMLInputElement>('groupByAssignee').checked = settings.groupByAssignee
   for (const name of [
@@ -49,6 +51,8 @@ function read(current: Settings): Settings {
     ...current,
     me: field<HTMLInputElement>('me').value.trim(),
     staleDays: Math.max(0, Number(field<HTMLInputElement>('staleDays').value) || 0),
+    stageWarnDays: Math.max(0, Number(field<HTMLInputElement>('stageWarnDays').value) || 0),
+    stageStaleDays: Math.max(0, Number(field<HTMLInputElement>('stageStaleDays').value) || 0),
     compact: field<HTMLInputElement>('compact').checked,
     groupByAssignee: field<HTMLInputElement>('groupByAssignee').checked,
   }

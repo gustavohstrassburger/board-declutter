@@ -1,3 +1,4 @@
+import type { StageTag } from '../core/stage'
 import type { Card, Decision } from '../core/types'
 import { isRendered, SELECTORS } from './dom'
 
@@ -197,4 +198,28 @@ function setGroup(el: Element, card: Card | undefined): void {
 export function clearAssigneeGroups(root: ParentNode): void {
   for (const el of root.querySelectorAll('[data-bd-group]')) el.removeAttribute('data-bd-group')
   for (const el of root.querySelectorAll('.bd-group-header')) el.remove()
+}
+
+export function clearStageTags(root: ParentNode): void {
+  for (const el of root.querySelectorAll('.bd-stage')) el.remove()
+}
+
+/** A chip in the card's header row, between "repo #number" and the avatars, saying how long the card has been
+ *  in its column. It lives inside the React-owned box, so it disappears with it when the card is un-rendered. */
+export function applyStageTag(el: Element, tag: StageTag | undefined): void {
+  let chip = el.querySelector<HTMLElement>('.bd-stage')
+  if (!tag) {
+    chip?.remove()
+    return
+  }
+  if (!chip) {
+    const left = el.querySelector('[id^="board-card-header-title-"]')?.parentElement
+    if (!left) return
+    chip = document.createElement('span')
+    chip.className = 'bd-stage'
+    left.insertAdjacentElement('afterend', chip)
+  }
+  setText(chip, tag.text)
+  if (chip.title !== tag.title) chip.title = tag.title
+  if (chip.dataset.level !== tag.level) chip.dataset.level = tag.level
 }

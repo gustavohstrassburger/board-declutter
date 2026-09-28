@@ -23,6 +23,9 @@ export const DEFAULT_SETTINGS: Settings = {
   collapsedColumns: [],
   compact: false,
   groupByAssignee: false,
+  stageColumns: ['In Review', 'Approved'],
+  stageWarnDays: 3,
+  stageStaleDays: 7,
   me: '',
 }
 

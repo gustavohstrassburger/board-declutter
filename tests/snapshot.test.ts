@@ -11,7 +11,15 @@ import { chooseColumnStats } from '../src/content/apply'
 import { SnapshotStore, SNAPSHOT_RETRY_MS, SNAPSHOT_TTL_MS } from '../src/content/snapshot-store'
 
 function item(fields: Record<string, string>, patch: Partial<SnapshotItem> = {}): SnapshotItem {
-  return { type: 'issue', title: 't', assignees: [], labels: [], fields, ...patch }
+  return {
+    type: 'issue',
+    title: 't',
+    assignees: [],
+    labels: [],
+    fields,
+    fieldUpdatedAt: {},
+    ...patch,
+  }
 }
 
 describe('projectFromPath', () => {
@@ -49,7 +57,13 @@ describe('columnField / columnOf', () => {
 describe('parseSnapshotNode / cardFromSnapshot', () => {
   it('maps a PR node into a snapshot item with enrichment, then into a card', () => {
     const parsed = parseSnapshotNode({
-      fieldValues: { nodes: [{ name: 'In Review', field: { name: 'Status' } }, null, {}] },
+      fieldValues: {
+        nodes: [
+          { name: 'In Review', updatedAt: '2026-09-20T00:00:00Z', field: { name: 'Status' } },
+          null,
+          {},
+        ],
+      },
       content: {
         __typename: 'PullRequest',
         number: 7,

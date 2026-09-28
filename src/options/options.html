@@ -94,6 +94,24 @@
         </section>
 
         <section>
+          <h2>Time in stage</h2>
+          <label>
+            Show how long each card has been in these columns (one per line)
+            <textarea name="stageColumns" rows="2" placeholder="In Review&#10;Approved"></textarea>
+            <small>Counted from when the column was last set. Needs a token.</small>
+          </label>
+          <label>
+            Thresholds
+            <span class="row">
+              amber after
+              <input name="stageWarnDays" type="number" min="0" step="1" class="narrow" /> days, red
+              after
+              <input name="stageStaleDays" type="number" min="0" step="1" class="narrow" /> days
+            </span>
+          </label>
+        </section>
+
+        <section>
           <h2>GitHub token</h2>
           <label>
             Personal access token

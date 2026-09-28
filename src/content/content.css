@@ -76,6 +76,32 @@
   text-overflow: ellipsis;
 }
 
+/* Time in stage */
+.bd-stage {
+  align-self: center;
+  margin-left: auto;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+  color: var(--fgColor-muted, #8b949e);
+  background: var(--bgColor-neutral-muted, rgba(110, 118, 129, 0.2));
+  cursor: default;
+}
+
+.bd-stage[data-level='warn'] {
+  color: var(--fgColor-attention, #d29922);
+  background: var(--bgColor-attention-muted, rgba(187, 128, 9, 0.15));
+}
+
+.bd-stage[data-level='stale'] {
+  color: var(--fgColor-danger, #f85149);
+  background: var(--bgColor-danger-muted, rgba(248, 81, 73, 0.15));
+}
+
 /* Placeholders (virtualised, empty) must not show our pseudo-elements. */
 [data-board-card-id]:empty::before,
 [data-board-card-id]:empty::after {

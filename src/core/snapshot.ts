@@ -12,6 +12,8 @@ export interface SnapshotItem {
   labels: string[]
   /** Single-select field values by field name, e.g. { Status: "In Review" }. */
   fields: Record<string, string>
+  /** When each single-select value was last set, by field name: how long the card has been in its column. */
+  fieldUpdatedAt: Record<string, string>
   enrichment?: Enrichment
 }
 

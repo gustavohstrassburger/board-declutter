@@ -124,7 +124,7 @@ query($owner: String!, $number: Int!, $after: String) {
         nodes {
           fieldValues(first: 30) {
             nodes {
-              ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }
+              ... on ProjectV2ItemFieldSingleSelectValue { name updatedAt field { ... on ProjectV2FieldCommon { name } } }
             }
           }
           content {
@@ -151,7 +151,9 @@ query($owner: String!, $number: Int!, $after: String) {
 }`
 
 interface SnapshotNode {
-  fieldValues: { nodes: ({ name?: string; field?: { name?: string } } | null)[] }
+  fieldValues: {
+    nodes: ({ name?: string; updatedAt?: string; field?: { name?: string } } | null)[]
+  }
   content:
     | null
     | { __typename: 'DraftIssue'; title: string; assignees: { nodes: { login: string }[] } }
@@ -167,8 +169,11 @@ interface SnapshotNode {
 
 export function parseSnapshotNode(node: SnapshotNode): SnapshotItem | undefined {
   const fields: Record<string, string> = {}
+  const fieldUpdatedAt: Record<string, string> = {}
   for (const v of node.fieldValues.nodes) {
-    if (v?.name && v.field?.name) fields[v.field.name] = v.name
+    if (!v?.name || !v.field?.name) continue
+    fields[v.field.name] = v.name
+    if (v.updatedAt) fieldUpdatedAt[v.field.name] = v.updatedAt
   }
   const c = node.content
   if (!c) return undefined
@@ -179,6 +184,7 @@ export function parseSnapshotNode(node: SnapshotNode): SnapshotItem | undefined 
       assignees: c.assignees.nodes.map((a) => a.login),
       labels: [],
       fields,
+      fieldUpdatedAt,
     }
   }
   const repo = c.repository.nameWithOwner
@@ -191,6 +197,7 @@ export function parseSnapshotNode(node: SnapshotNode): SnapshotItem | undefined 
     assignees: c.assignees.nodes.map((a) => a.login),
     labels: c.labels.nodes.map((l) => l.name),
     fields,
+    fieldUpdatedAt,
     enrichment: {
       author: c.author?.login ?? 'ghost',
       authorIsBot: c.author?.__typename === 'Bot',

@@ -3,6 +3,7 @@ import {
   applyCollapsedColumns,
   applyColumnStats,
   applyDecision,
+  applyStageTag,
   clearAll,
   clearAssigneeGroups,
   collectColumnStats,
@@ -270,5 +271,37 @@ describe('markAssigneeGroups', () => {
     card.lastElementChild!.remove() // GitHub un-rendered it; only our header is left
     markAssigneeGroups(document, [])
     expect(card.children).toHaveLength(0)
+  })
+})
+
+describe('applyStageTag', () => {
+  it('adds the chip after the header title group, updates it in place and removes it', () => {
+    const el = document.querySelector('[data-board-card-id="231274630"]')!
+    const left = el.querySelector('[id^="board-card-header-title-"]')!.parentElement!
+    applyStageTag(el, {
+      days: 4,
+      level: 'warn',
+      text: '4d',
+      title: '4 days in In Review (since 2026-09-24)',
+    })
+    const chip = el.querySelector<HTMLElement>('.bd-stage')!
+    expect(left.nextElementSibling).toBe(chip)
+    expect(chip.textContent).toBe('4d')
+    expect(chip.dataset.level).toBe('warn')
+
+    applyStageTag(el, { days: 9, level: 'stale', text: '9d', title: '9 days' })
+    expect(el.querySelectorAll('.bd-stage')).toHaveLength(1)
+    expect(chip.dataset.level).toBe('stale')
+
+    applyStageTag(el, undefined)
+    expect(el.querySelector('.bd-stage')).toBeNull()
+  })
+
+  it('does nothing on a card without a header row', () => {
+    document.body.innerHTML =
+      '<div data-board-card-id="1"><div><h3 id="board-card-title-1">t</h3></div></div>'
+    const el = document.querySelector('[data-board-card-id="1"]')!
+    applyStageTag(el, { days: 1, level: 'ok', text: '1d', title: '' })
+    expect(el.querySelector('.bd-stage')).toBeNull()
   })
 })

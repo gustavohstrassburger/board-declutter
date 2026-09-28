@@ -1,11 +1,13 @@
 import { evaluate } from '../core/rules'
 import { cardFromSnapshot, columnField, projectFromPath } from '../core/snapshot'
+import { stageTag } from '../core/stage'
 import { loadSettings, onSettingsChange, saveSettings } from '../core/settings'
 import type { Settings } from '../core/types'
 import {
   applyCollapsedColumns,
   applyColumnStats,
   applyDecision,
+  applyStageTag,
   chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
@@ -73,15 +75,22 @@ function apply(): void {
       .filter((k): k is string => k !== undefined && snapshot.item(k) === undefined),
   )
 
-  for (const { el, card } of entries) {
-    const key = cardKey(card)
-    if (key) card.enrichment = snapshot.item(key)?.enrichment ?? enrichment.get(key)
-    applyDecision(el, evaluate(card, settings), version, key)
-  }
-
   const columns = [...board.querySelectorAll(SELECTORS.column)]
   const columnNames = columns.map((c) => c.getAttribute('data-board-column') ?? '')
   const field = items ? columnField(items, columnNames) : undefined
+  const now = new Date()
+
+  for (const { el, card } of entries) {
+    const key = cardKey(card)
+    const item = key ? snapshot.item(key) : undefined
+    if (key) card.enrichment = item?.enrichment ?? enrichment.get(key)
+    applyDecision(el, evaluate(card, settings), version, key)
+    applyStageTag(
+      el,
+      stageTag(card, field ? item?.fieldUpdatedAt[field] : undefined, settings, now),
+    )
+  }
+
   const fromSnapshot = new Map<string, ColumnStats>()
   if (items && field) {
     for (const item of items) {

@@ -22,6 +22,7 @@ On top of that:
 - **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible once the rules ran, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number is only shown when it covers the whole column: with a token the extension evaluates every project item from the API; without one it waits until the column is fully loaded.
 - **Collapsed columns**: fold columns like "Done" into a thin strip.
 - **Compact mode**: single-line titles, no label chips.
+- **Time in stage**: in the columns you pick (default "In Review" and "Approved"), each card gets a chip with how many days it has been sitting there, amber after 3 days and red after 7. Counted from when the column was last set, so it needs a token.
 - **Group by assignee**: every column ordered by assignee with a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
 - **Floating toolbar**: quick toggles for the most used rules without opening the options page.
 - **Reason badge**: dimmed cards show why ("bot author · draft PR") in the bottom-right corner.
