@@ -12,7 +12,11 @@ export interface Card {
   /** Avatar URL per assignee login, when the card shows them. */
   avatars?: Record<string, string>
   labels: string[]
+  /** The parent issue, when the view shows the "Parent issue" field. */
+  parent?: { title: string; url: string; number?: number }
 }
+
+export type GroupBy = 'none' | 'assignee' | 'parent'
 
 export type Mode = 'show' | 'dim' | 'hide'
 
@@ -35,8 +39,8 @@ export interface Settings {
   /** Column names removed from view entirely; managed from the toolbar's Columns menu. */
   hiddenColumns: string[]
   compact: boolean
-  /** Sort every column by assignee (GitHub's own sort, via the URL) and label the first card of each run. */
-  groupByAssignee: boolean
+  /** Sort every column by assignee or parent issue (GitHub's own sort, via the URL) and title each run. */
+  groupBy: GroupBy
   /** Hide everything on the page that is not the board; moving the mouse to the top edge reveals it. */
   focus: boolean
   /** Lay `splitColumns` out as two stacks, issues left and PRs right, newest first (GitHub's sort by Created). */

@@ -12,7 +12,7 @@ export const DEFAULT_SETTINGS: Settings = {
   collapsedColumns: [],
   hiddenColumns: [],
   compact: false,
-  groupByAssignee: false,
+  groupBy: 'none',
   focus: false,
   split: false,
   splitColumns: ['No Status'],
@@ -24,7 +24,11 @@ const STORAGE_KEY = 'settings'
 
 /** Merge stored values over defaults so new settings keys get a value after an upgrade. */
 export function mergeSettings(stored: Partial<Settings> | undefined): Settings {
-  return { ...DEFAULT_SETTINGS, ...(stored ?? {}) }
+  const legacy = stored as (Partial<Settings> & { groupByAssignee?: boolean }) | undefined
+  const merged = { ...DEFAULT_SETTINGS, ...(stored ?? {}) }
+  // Earlier builds had a boolean for grouping by assignee.
+  if (legacy?.groupByAssignee && !legacy.groupBy) merged.groupBy = 'assignee'
+  return merged
 }
 
 export async function loadSettings(): Promise<Settings> {

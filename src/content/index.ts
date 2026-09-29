@@ -12,15 +12,15 @@ import {
   clearAssigneeGroups,
   collectColumnStats,
   githubColumnCount,
-  markAssigneeGroups,
+  markGroups,
   resetStaleDecisions,
 } from './apply'
 import { parseBoard, SELECTORS } from './dom'
 import { installPeek } from './focus'
 import { ColumnPreloader } from './preload'
-import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT } from './sort'
+import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT, PARENT_SORT } from './sort'
 import { Toolbar } from './toolbar'
-import { viewShowsLabels } from './view'
+import { viewShowsLabels, viewShowsParent } from './view'
 
 let settings: Settings
 /** Bumped whenever settings change; see `applyDecision` for why decisions are stamped with it. */
@@ -54,13 +54,21 @@ function apply(): void {
       dimmed: 0,
       columns: columnNames(board),
       labelsVisible: true,
+      parentVisible: true,
     })
     return
   }
 
   resetStaleDecisions(board, version)
   // Both features lean on GitHub's own sort; grouping by assignee takes precedence when both are on.
-  const sort = settings.groupByAssignee ? ASSIGNEE_SORT : settings.split ? NEWEST_SORT : undefined
+  const sort =
+    settings.groupBy === 'assignee'
+      ? ASSIGNEE_SORT
+      : settings.groupBy === 'parent'
+        ? PARENT_SORT
+        : settings.split
+          ? NEWEST_SORT
+          : undefined
   if (sort && ensureSort(board, sort)) return
 
   const entries = parseBoard(board)
@@ -82,7 +90,7 @@ function apply(): void {
   applyHiddenColumns(board, settings.hiddenColumns)
   applySplitColumns(board, settings.split ? settings.splitColumns : [], schedule)
   if (settings.preloadColumns) preloader.run(board)
-  if (settings.groupByAssignee) markAssigneeGroups(board, entries)
+  if (settings.groupBy !== 'none') markGroups(board, entries, settings.groupBy)
   else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)
   document.documentElement.toggleAttribute('data-bd-focus', settings.focus)
@@ -93,6 +101,7 @@ function apply(): void {
     dimmed,
     columns: columnNames(board),
     labelsVisible: entries.length === 0 || viewShowsLabels(document, location.pathname),
+    parentVisible: entries.length === 0 || viewShowsParent(document, location.pathname),
   })
 }
 

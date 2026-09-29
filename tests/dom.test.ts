@@ -11,6 +11,7 @@ import {
   clearAssigneeGroups,
   collectColumnStats,
   markAssigneeGroups,
+  markGroups,
   resetStaleDecisions,
   setText,
 } from '../src/content/apply'
@@ -336,5 +337,38 @@ describe('clampOffset', () => {
     expect(clampOffset(500, 1000, 300)).toBe(500)
     expect(clampOffset(900, 1000, 300)).toBe(700)
     expect(clampOffset(50, 200, 300)).toBe(0)
+  })
+})
+
+describe('parent issue', () => {
+  const CARD = `<div data-board-column="C"><div>C</div><div>
+    <div data-board-card-id="1" data-hovercard-subject-tag="issue:1"><div>
+      <a href="https://github.com/o/r/issues/1"><h3 id="board-card-title-1">child</h3></a>
+      <ul aria-label="Fields"><li><div><button aria-label="Parent issue: Cut over realtime cohorts" data-hovercard-url="https://github.com/o/r/issues/88017/hovercard"></button></div></li></ul>
+    </div></div>
+    <div data-board-card-id="2" data-hovercard-subject-tag="issue:2"><div>
+      <a href="https://github.com/o/r/issues/2"><h3 id="board-card-title-2">orphan</h3></a>
+    </div></div>
+  </div></div>`
+
+  it('parses the parent token and tags it for compact mode', () => {
+    document.body.innerHTML = CARD
+    expect(parseCard(document.querySelector('[data-board-card-id="1"]')!)?.parent).toEqual({
+      title: 'Cut over realtime cohorts',
+      url: 'https://github.com/o/r/issues/88017',
+      number: 88017,
+    })
+    expect(parseCard(document.querySelector('[data-board-card-id="2"]')!)?.parent).toBeUndefined()
+    expect(document.querySelectorAll('li[data-bd-field="parent"]')).toHaveLength(1)
+  })
+
+  it('groups by parent with number and title, and "No parent" otherwise', () => {
+    document.body.innerHTML = CARD
+    markGroups(document, parseBoard(document), 'parent')
+    const groups = [...document.querySelectorAll('[data-board-card-id]')].map((el) =>
+      el.getAttribute('data-bd-group'),
+    )
+    expect(groups).toEqual(['#88017 Cut over realtime cohorts', 'No parent'])
+    expect(document.querySelector('.bd-group-header img')).toBeNull()
   })
 })

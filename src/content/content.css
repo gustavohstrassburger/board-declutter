@@ -217,7 +217,8 @@ html[data-bd-compact] [data-board-card-id] h3[id^='board-card-title-'] {
 }
 
 html[data-bd-compact] [data-board-card-id] figure[data-bd-field='labels'],
-html[data-bd-compact] [data-board-card-id] li[data-bd-field='label'] {
+html[data-bd-compact] [data-board-card-id] li[data-bd-field='label'],
+html[data-bd-compact] [data-board-card-id] li[data-bd-field='parent'] {
   display: none;
 }
 

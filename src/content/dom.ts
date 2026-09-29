@@ -10,6 +10,8 @@ export const SELECTORS = {
   avatar: 'img[data-testid="github-avatar"]',
   /** One per label when the view shows the Labels field. */
   labelButton: 'button[aria-label^="Label: "]',
+  /** The parent issue token when the view shows the "Parent issue" field. */
+  parentButton: 'button[aria-label^="Parent issue: "]',
 } as const
 
 const ITEM_PATH = /^\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)$/
@@ -88,6 +90,16 @@ function cardLabels(el: Element, fields: Map<string, Field>): string[] {
     .filter(Boolean)
 }
 
+function cardParent(el: Element): Card['parent'] | undefined {
+  const button = el.querySelector(SELECTORS.parentButton)
+  if (!button) return undefined
+  button.closest('li')?.setAttribute('data-bd-field', 'parent')
+  const title = (button.getAttribute('aria-label') ?? '').slice('Parent issue: '.length).trim()
+  const url = (button.getAttribute('data-hovercard-url') ?? '').replace(/\/hovercard$/, '')
+  const number = Number(url.match(/\/issues\/(\d+)$/)?.[1])
+  return { title, url, number: Number.isInteger(number) ? number : undefined }
+}
+
 export function parseCard(el: Element): Card | null {
   const id = el.getAttribute('data-board-card-id')
   if (!id || !isRendered(el)) return null
@@ -117,6 +129,7 @@ export function parseCard(el: Element): Card | null {
     assignees: fields.get('assignees')?.values ?? [],
     avatars: fields.get('assignees')?.avatars,
     labels: cardLabels(el, fields),
+    parent: cardParent(el),
   }
 }
 

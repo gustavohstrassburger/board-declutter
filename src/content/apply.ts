@@ -1,4 +1,4 @@
-import type { Card, Decision } from '../core/types'
+import type { Card, Decision, GroupBy } from '../core/types'
 import { isRendered, SELECTORS } from './dom'
 
 /** Decisions are stamped with the settings version they were made under.
@@ -253,14 +253,28 @@ export function resetStackScroll(): void {
 }
 
 export const UNASSIGNED_GROUP = 'Unassigned'
+export const NO_PARENT_GROUP = 'No parent'
 
 export function assigneeGroup(card: Card): string {
   return card.assignees.length ? card.assignees.join(', ') : UNASSIGNED_GROUP
 }
 
-/** Label the first visible card of every run of equal assignees inside each column.
+export function parentGroup(card: Card): string {
+  if (!card.parent) return NO_PARENT_GROUP
+  return card.parent.number ? `#${card.parent.number} ${card.parent.title}` : card.parent.title
+}
+
+export function groupOf(card: Card, by: GroupBy): string {
+  return by === 'parent' ? parentGroup(card) : assigneeGroup(card)
+}
+
+/** Title the first visible card of every run of equal groups inside each column.
  *  GitHub does the actual ordering (see `sort.ts`); placeholders are skipped and re-evaluated once rendered. */
-export function markAssigneeGroups(root: ParentNode, entries: { el: Element; card: Card }[]): void {
+export function markGroups(
+  root: ParentNode,
+  entries: { el: Element; card: Card }[],
+  by: GroupBy,
+): void {
   const byEl = new Map(entries.map((e) => [e.el, e.card]))
   for (const column of root.querySelectorAll(SELECTORS.column)) {
     // A split column shows two stacks, and runs are visual: track them per stack, not in DOM order.
@@ -269,27 +283,32 @@ export function markAssigneeGroups(root: ParentNode, entries: { el: Element; car
     for (const el of column.querySelectorAll(SELECTORS.card)) {
       const card = byEl.get(el)
       if (!card || el.getAttribute('data-bd-mode') === 'hide') {
-        setGroup(el, undefined)
+        setGroup(el, undefined, by)
         continue
       }
       const stack = split && card.type === 'pull_request' ? 1 : 0
-      const group = assigneeGroup(card)
-      setGroup(el, group !== previous[stack] ? card : undefined)
+      const group = groupOf(card, by)
+      setGroup(el, group !== previous[stack] ? card : undefined, by)
       previous[stack] = group
     }
   }
 }
 
-/** A small header inserted as the card's first child: the assignees' avatars and the group name.
- *  React only ever touches its own inner box, so a sibling in front of it survives re-renders. */
-function setGroup(el: Element, card: Card | undefined): void {
+/** Kept for callers and tests that group by assignee. */
+export function markAssigneeGroups(root: ParentNode, entries: { el: Element; card: Card }[]): void {
+  markGroups(root, entries, 'assignee')
+}
+
+/** A small header inserted as the card's first child: avatars and name for assignees, number and title for a
+ *  parent issue. React only ever touches its own inner box, so a sibling in front of it survives re-renders. */
+function setGroup(el: Element, card: Card | undefined, by: GroupBy): void {
   let header = el.querySelector<HTMLElement>(':scope > .bd-group-header')
   if (!card) {
     el.removeAttribute('data-bd-group')
     header?.remove()
     return
   }
-  const group = assigneeGroup(card)
+  const group = groupOf(card, by)
   if (el.getAttribute('data-bd-group') === group && header) return
   el.setAttribute('data-bd-group', group)
   if (!header) {
@@ -298,18 +317,21 @@ function setGroup(el: Element, card: Card | undefined): void {
     el.prepend(header)
   }
   header.replaceChildren()
-  for (const login of card.assignees) {
-    const src = card.avatars?.[login]
-    if (!src) continue
-    const img = document.createElement('img')
-    img.src = src
-    img.alt = ''
-    img.width = 16
-    img.height = 16
-    header.appendChild(img)
+  if (by === 'assignee') {
+    for (const login of card.assignees) {
+      const src = card.avatars?.[login]
+      if (!src) continue
+      const img = document.createElement('img')
+      img.src = src
+      img.alt = ''
+      img.width = 16
+      img.height = 16
+      header.appendChild(img)
+    }
   }
   const name = document.createElement('span')
   name.textContent = group
+  name.title = group
   header.appendChild(name)
 }
 

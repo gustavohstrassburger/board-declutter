@@ -1,4 +1,4 @@
-import type { Mode, Settings } from '../core/types'
+import type { GroupBy, Mode, Settings } from '../core/types'
 import { setText } from './apply'
 
 export interface ToolbarState {
@@ -9,6 +9,8 @@ export interface ToolbarState {
   columns: string[]
   /** False when the view hides the Labels field, which blinds the AI rule. */
   labelsVisible: boolean
+  /** False when the view hides the "Parent issue" field, which blinds grouping by parent. */
+  parentVisible: boolean
 }
 
 const MODE_LABEL: Record<Mode, string> = { show: 'show', dim: 'dim', hide: 'hide' }
@@ -31,6 +33,12 @@ function saveCollapsed(collapsed: boolean): void {
   }
 }
 const NEXT_MODE: Record<Mode, Mode> = { show: 'dim', dim: 'hide', hide: 'show' }
+const GROUP_LABEL: Record<GroupBy, string> = { none: 'off', assignee: 'assignee', parent: 'parent' }
+const NEXT_GROUP: Record<GroupBy, GroupBy> = {
+  none: 'assignee',
+  assignee: 'parent',
+  parent: 'none',
+}
 
 /** A floating panel appended to <body>, deliberately outside the React-managed board tree. */
 export class Toolbar {
@@ -46,6 +54,7 @@ export class Toolbar {
     dimmed: 0,
     columns: [],
     labelsVisible: true,
+    parentVisible: true,
   }
 
   constructor(
@@ -105,9 +114,9 @@ export class Toolbar {
       () => ({ split: !this.settings.split }),
     )
     this.addToggle(
-      'groupByAssignee',
-      () => (this.settings.groupByAssignee ? 'By assignee ✓' : 'By assignee'),
-      () => ({ groupByAssignee: !this.settings.groupByAssignee }),
+      'groupBy',
+      () => `Group: ${GROUP_LABEL[this.settings.groupBy]}`,
+      () => ({ groupBy: NEXT_GROUP[this.settings.groupBy] }),
     )
 
     this.columnsMenu = this.addColumnsMenu()
@@ -243,15 +252,26 @@ export class Toolbar {
   }
 
   private renderSummary(): void {
-    const { hidden, dimmed, total, labelsVisible } = this.lastState
-    const blind = this.settings.aiMode !== 'show' && !labelsVisible
+    const { hidden, dimmed, total, labelsVisible, parentVisible } = this.lastState
+    const warnings: string[] = []
+    const tips: string[] = []
+    if (this.settings.aiMode !== 'show' && !labelsVisible) {
+      warnings.push('⚠ labels hidden')
+      tips.push(
+        'This view does not show the Labels field, so the AI rule cannot see the "self-driving" label. Enable it under View → Fields → Labels.',
+      )
+    }
+    if (this.settings.groupBy === 'parent' && !parentVisible) {
+      warnings.push('⚠ parent hidden')
+      tips.push(
+        'This view does not show the "Parent issue" field, so cards cannot be grouped by parent. Enable it under View → Fields → Parent issue.',
+      )
+    }
     setText(
       this.summary,
-      `${hidden} hidden · ${dimmed} dimmed · ${total} cards${blind ? ' · ⚠ labels hidden' : ''}`,
+      [`${hidden} hidden · ${dimmed} dimmed · ${total} cards`, ...warnings].join(' · '),
     )
-    const title = blind
-      ? 'This view does not show the Labels field, so the AI rule cannot see the "self-driving" label. Enable it under View → Fields → Labels.'
-      : ''
+    const title = tips.join('\n')
     if (this.summary.title !== title) this.summary.title = title
   }
 

@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS, loadSettings, parseList, saveSettings } from '../core/settings'
-import type { Mode, Settings } from '../core/types'
+import type { GroupBy, Mode, Settings } from '../core/types'
 
 const MODES: Mode[] = ['show', 'dim', 'hide']
 const LIST_FIELDS = ['teamMembers', 'teamLabels', 'titlePatterns', 'collapsedColumns'] as const
@@ -24,7 +24,7 @@ for (const select of form.querySelectorAll<HTMLSelectElement>('select[data-mode]
 function fill(settings: Settings): void {
   field<HTMLInputElement>('me').value = settings.me
   field<HTMLInputElement>('compact').checked = settings.compact
-  field<HTMLInputElement>('groupByAssignee').checked = settings.groupByAssignee
+  field<HTMLSelectElement>('groupBy').value = settings.groupBy
   field<HTMLInputElement>('focus').checked = settings.focus
   field<HTMLInputElement>('split').checked = settings.split
   field<HTMLInputElement>('preloadColumns').checked = settings.preloadColumns
@@ -37,7 +37,7 @@ function read(current: Settings): Settings {
     ...current,
     me: field<HTMLInputElement>('me').value.trim(),
     compact: field<HTMLInputElement>('compact').checked,
-    groupByAssignee: field<HTMLInputElement>('groupByAssignee').checked,
+    groupBy: field<HTMLSelectElement>('groupBy').value as GroupBy,
     focus: field<HTMLInputElement>('focus').checked,
     split: field<HTMLInputElement>('split').checked,
     preloadColumns: field<HTMLInputElement>('preloadColumns').checked,
