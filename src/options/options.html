@@ -82,6 +82,18 @@
             </small>
           </label>
           <label class="check">
+            <input name="split" type="checkbox" /> Split issues and pull requests into two stacks,
+            newest first
+            <small>
+              Applies to the columns below. Uses GitHub's own "sort by Created"; when "group by
+              assignee" is also on, its sort wins and the stacks keep that order.
+            </small>
+          </label>
+          <label>
+            Columns to split (one per line)
+            <textarea name="splitColumns" rows="2" placeholder="No Status"></textarea>
+          </label>
+          <label class="check">
             <input name="groupByAssignee" type="checkbox" /> Group cards by assignee within each
             column
             <small>

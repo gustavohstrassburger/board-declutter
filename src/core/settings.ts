@@ -14,6 +14,8 @@ export const DEFAULT_SETTINGS: Settings = {
   compact: false,
   groupByAssignee: false,
   focus: false,
+  split: false,
+  splitColumns: ['No Status'],
   me: '',
 }
 

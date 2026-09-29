@@ -100,6 +100,11 @@ export class Toolbar {
       () => ({ focus: !this.settings.focus }),
     )
     this.addToggle(
+      'split',
+      () => (this.settings.split ? 'Split ✓' : 'Split'),
+      () => ({ split: !this.settings.split }),
+    )
+    this.addToggle(
       'groupByAssignee',
       () => (this.settings.groupByAssignee ? 'By assignee ✓' : 'By assignee'),
       () => ({ groupByAssignee: !this.settings.groupByAssignee }),

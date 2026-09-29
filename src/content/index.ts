@@ -6,6 +6,7 @@ import {
   applyColumnStats,
   applyDecision,
   applyHiddenColumns,
+  applySplitColumns,
   chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
@@ -16,7 +17,7 @@ import {
 } from './apply'
 import { parseBoard, SELECTORS } from './dom'
 import { installPeek } from './focus'
-import { ensureAssigneeSort } from './sort'
+import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT } from './sort'
 import { Toolbar } from './toolbar'
 import { viewShowsLabels } from './view'
 
@@ -56,7 +57,9 @@ function apply(): void {
   }
 
   resetStaleDecisions(board, version)
-  if (settings.groupByAssignee && ensureAssigneeSort(board)) return
+  // Both features lean on GitHub's own sort; grouping by assignee takes precedence when both are on.
+  const sort = settings.groupByAssignee ? ASSIGNEE_SORT : settings.split ? NEWEST_SORT : undefined
+  if (sort && ensureSort(board, sort)) return
 
   const entries = parseBoard(board)
   for (const { el, card } of entries) {
@@ -75,6 +78,7 @@ function apply(): void {
   }
   applyCollapsedColumns(board, settings.collapsedColumns)
   applyHiddenColumns(board, settings.hiddenColumns)
+  applySplitColumns(board, settings.split ? settings.splitColumns : [])
   if (settings.groupByAssignee) markAssigneeGroups(board, entries)
   else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)

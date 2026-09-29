@@ -39,6 +39,9 @@ export interface Settings {
   groupByAssignee: boolean
   /** Hide everything on the page that is not the board; moving the mouse to the top edge reveals it. */
   focus: boolean
+  /** Lay `splitColumns` out as two stacks, issues left and PRs right, newest first (GitHub's sort by Created). */
+  split: boolean
+  splitColumns: string[]
   /** Your GitHub login: cards assigned to you get highlighted and are never hidden. */
   me: string
 }

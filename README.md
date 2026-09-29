@@ -20,6 +20,7 @@ On top of that:
 - **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number only appears once the column is fully loaded.
 - **Hidden and collapsed columns**: the toolbar's **Columns** button lists the board's columns with a checkbox each, so "Done" or "No Status" can be removed in one click; the options page can also fold columns into a thin strip.
 - **Compact mode**: single-line titles, no label chips.
+- **Split issues and PRs**: a column such as "No Status" becomes two stacks side by side, issues on the left and pull requests on the right, newest first. GitHub does the ordering (sort by Created) and a CSS grid does the split, so the virtualised list is never reordered.
 - **Group by assignee**: every column ordered by assignee, with the assignees' avatars and name as a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
 - **Focus mode**: hides GitHub's header, the project title bar, the view tabs and the filter bar so the board gets the whole window. Push the mouse against the top edge to bring them back.
 - **Floating toolbar**: quick toggles for the rules without opening the options page. It can be minimized to a small pill that keeps the hidden count.

@@ -4,6 +4,7 @@ import {
   applyColumnStats,
   applyDecision,
   applyHiddenColumns,
+  applySplitColumns,
   chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
@@ -138,6 +139,15 @@ describe('apply', () => {
     ).toBe(false)
     applyHiddenColumns(document, [])
     expect(document.querySelector('[data-bd-hidden-column]')).toBeNull()
+  })
+
+  it('marks columns to split and clearAll releases them', () => {
+    applySplitColumns(document, ['todo'])
+    expect(
+      document.querySelector('[data-board-column="Todo"]')?.hasAttribute('data-bd-split'),
+    ).toBe(true)
+    clearAll(document)
+    expect(document.querySelector('[data-bd-split]')).toBeNull()
   })
 
   it('collapses columns case-insensitively and clearAll resets the board', () => {

@@ -1,28 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { withAssigneeSort } from '../src/content/sort'
+import { ASSIGNEE_SORT, NEWEST_SORT, withSort } from '../src/content/sort'
 
-describe('withAssigneeSort', () => {
-  it('adds the assignee sort to a project view URL and keeps other params', () => {
-    const out = withAssigneeSort(
-      'https://github.com/orgs/PostHog/projects/112/views/2?filterQuery=-is%3Adraft',
-    )
-    expect(out).toBe(
-      'https://github.com/orgs/PostHog/projects/112/views/2?filterQuery=-is%3Adraft&sortedBy%5Bdirection%5D=asc&sortedBy%5BcolumnId%5D=Assignees',
+const board = 'https://github.com/orgs/PostHog/projects/112/views/2'
+
+describe('withSort', () => {
+  it('adds the sort to a project view URL and keeps other params', () => {
+    expect(withSort(`${board}?filterQuery=-is%3Adraft`, ASSIGNEE_SORT)).toBe(
+      `${board}?filterQuery=-is%3Adraft&sortedBy%5Bdirection%5D=asc&sortedBy%5BcolumnId%5D=Assignees`,
     )
   })
 
-  it('leaves a URL alone when it already has a sort, ours or the user’s', () => {
+  it('is a no-op when the wanted sort is already there', () => {
     expect(
-      withAssigneeSort(
-        'https://github.com/orgs/PostHog/projects/112?sortedBy%5BcolumnId%5D=Assignees',
+      withSort(`${board}?sortedBy%5Bdirection%5D=desc&sortedBy%5BcolumnId%5D=Created`, NEWEST_SORT),
+    ).toBeUndefined()
+  })
+
+  it('replaces one of its own sorts but never the user’s', () => {
+    expect(
+      withSort(
+        `${board}?sortedBy%5Bdirection%5D=asc&sortedBy%5BcolumnId%5D=Assignees`,
+        NEWEST_SORT,
       ),
-    ).toBeUndefined()
-    expect(
-      withAssigneeSort('https://github.com/orgs/PostHog/projects/112?sortedBy%5BcolumnId%5D=Title'),
-    ).toBeUndefined()
+    ).toContain('sortedBy%5BcolumnId%5D=Created')
+    expect(withSort(`${board}?sortedBy%5BcolumnId%5D=Title`, NEWEST_SORT)).toBeUndefined()
   })
 
   it('ignores pages that are not project views', () => {
-    expect(withAssigneeSort('https://github.com/PostHog/posthog/pulls')).toBeUndefined()
+    expect(withSort('https://github.com/PostHog/posthog/pulls', ASSIGNEE_SORT)).toBeUndefined()
   })
 })

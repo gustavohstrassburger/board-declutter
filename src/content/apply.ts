@@ -115,6 +115,12 @@ export function applyHiddenColumns(root: ParentNode, hidden: string[]): void {
   markColumns(root, hidden, 'data-bd-hidden-column')
 }
 
+/** Two stacks inside one column, issues left and PRs right. Pure CSS grid on the card list (see content.css):
+ *  the card type comes from `data-hovercard-subject-tag`, which even virtualised placeholders carry. */
+export function applySplitColumns(root: ParentNode, split: string[]): void {
+  markColumns(root, split, 'data-bd-split')
+}
+
 export const UNASSIGNED_GROUP = 'Unassigned'
 
 export function assigneeGroup(card: Card): string {
@@ -185,6 +191,7 @@ export function clearAll(root: ParentNode): void {
     el.removeAttribute('data-bd-collapsed')
   for (const el of root.querySelectorAll('[data-bd-hidden-column]'))
     el.removeAttribute('data-bd-hidden-column')
+  for (const el of root.querySelectorAll('[data-bd-split]')) el.removeAttribute('data-bd-split')
   clearAssigneeGroups(root)
   document.documentElement.removeAttribute('data-bd-compact')
   document.documentElement.removeAttribute('data-bd-focus')
