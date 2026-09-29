@@ -227,10 +227,17 @@ function installStackScroll(zone: HTMLElement, name: string, relayout: () => voi
       const stack = event.clientX < rect.left + rect.width / 2 ? 0 : 1
       const step = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1
       const state = stateFor(name)
+      // GitHub's footer ("Add item") is pinned over the bottom of the list; keep the last card clear of it.
+      const footer = Math.max(
+        0,
+        ...[...zone.children]
+          .filter((c) => !c.hasAttribute('data-board-card-id'))
+          .map((c) => (c as HTMLElement).offsetHeight),
+      )
       const next = clampOffset(
         state.offsets[stack] + event.deltaY * step,
         state.heights[stack],
-        rect.height,
+        rect.height - footer,
       )
       if (next === state.offsets[stack]) return
       event.preventDefault()

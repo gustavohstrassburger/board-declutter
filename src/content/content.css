@@ -151,9 +151,20 @@ html[data-bd-focus]:not([data-bd-peek])
   grid-column: 2 !important;
 }
 
-/* Anything else GitHub puts in the list (drop indicators, "add item") spans both stacks. */
+/* Anything else GitHub puts in the list ("Add item", the load-more sentinel) would land at the top of the
+   zero-height rows, behind the cards. Pin it to the bottom of the list, above the stacks. */
+[data-board-column][data-bd-split] [data-dnd-drop-type='card'] {
+  position: relative !important;
+}
+
 [data-board-column][data-bd-split] [data-dnd-drop-type='card'] > :not([data-board-card-id]) {
   grid-column: 1 / -1 !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 3 !important;
+  background: var(--bgColor-default, #0d1117);
 }
 
 .bd-split-header {
