@@ -47,10 +47,7 @@ describe('parseResponse', () => {
           isDraft: true,
           reviewDecision: 'APPROVED',
           reviewRequests: {
-            nodes: [
-              { requestedReviewer: { slug: 'team-feature-flags' } },
-              { requestedReviewer: null },
-            ],
+            nodes: [{ requestedReviewer: { login: 'haacked' } }, { requestedReviewer: null }],
           },
         },
         i1: { __typename: 'Issue', author: null, updatedAt: '2026-08-01T00:00:00Z' },
@@ -63,7 +60,7 @@ describe('parseResponse', () => {
         authorIsBot: true,
         isDraft: true,
         reviewDecision: 'APPROVED',
-        reviewers: ['team-feature-flags'],
+        reviewers: ['haacked'],
         updatedAt: '2026-09-01T00:00:00Z',
       },
       'PostHog/posthog#2': {

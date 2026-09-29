@@ -75,7 +75,9 @@ describe('parseSnapshotNode / cardFromSnapshot', () => {
         updatedAt: '2026-09-01T00:00:00Z',
         isDraft: true,
         reviewDecision: null,
-        reviewRequests: { nodes: [{ requestedReviewer: { slug: 'team-x' } }] },
+        reviewRequests: {
+          nodes: [{ requestedReviewer: { login: 'ann' } }, { requestedReviewer: null }],
+        },
       },
     })!
     expect(parsed).toMatchObject({
@@ -86,7 +88,7 @@ describe('parseSnapshotNode / cardFromSnapshot', () => {
     expect(parsed.enrichment).toMatchObject({
       authorIsBot: true,
       isDraft: true,
-      reviewers: ['team-x'],
+      reviewers: ['ann'],
     })
     expect(cardFromSnapshot(parsed, 'Status')).toMatchObject({
       column: 'In Review',

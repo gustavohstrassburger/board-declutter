@@ -45,7 +45,7 @@ fragment PullRequestFields on PullRequest {
   isDraft
   reviewDecision
   reviewRequests(first: 10) {
-    nodes { requestedReviewer { ... on User { login } ... on Team { slug } } }
+    nodes { requestedReviewer { ... on User { login } } }
   }
 }
 query {
@@ -59,7 +59,8 @@ interface GraphQLItem {
   updatedAt: string
   isDraft?: boolean
   reviewDecision?: Enrichment['reviewDecision']
-  reviewRequests?: { nodes: { requestedReviewer: { login?: string; slug?: string } | null }[] }
+  /** Only users: any Team field needs the read:org scope, and the rules only match logins anyway. */
+  reviewRequests?: { nodes: { requestedReviewer: { login?: string } | null }[] }
 }
 
 /** Map the aliased response back onto the keys, in the same order `buildQuery` grouped them. */
@@ -85,7 +86,7 @@ export function parseResponse(
         isDraft: node.isDraft ?? false,
         reviewDecision: node.reviewDecision ?? null,
         reviewers: (node.reviewRequests?.nodes ?? [])
-          .map((n) => n.requestedReviewer?.login ?? n.requestedReviewer?.slug)
+          .map((n) => n.requestedReviewer?.login)
           .filter((r): r is string => Boolean(r)),
         updatedAt: node.updatedAt,
       }
@@ -189,7 +190,7 @@ query($owner: String!, $number: Int!, $after: String) {
               repository { nameWithOwner }
               assignees(first: 10) { nodes { login } }
               labels(first: 20) { nodes { name } }
-              reviewRequests(first: 10) { nodes { requestedReviewer { ... on User { login } ... on Team { slug } } } }
+              reviewRequests(first: 10) { nodes { requestedReviewer { ... on User { login } } } }
             }
           }
         }
@@ -252,7 +253,7 @@ export function parseSnapshotNode(node: SnapshotNode): SnapshotItem | undefined 
       isDraft: c.isDraft ?? false,
       reviewDecision: c.reviewDecision ?? null,
       reviewers: (c.reviewRequests?.nodes ?? [])
-        .map((n) => n.requestedReviewer?.login ?? n.requestedReviewer?.slug)
+        .map((n) => n.requestedReviewer?.login)
         .filter((r): r is string => Boolean(r)),
       updatedAt: c.updatedAt,
     },
