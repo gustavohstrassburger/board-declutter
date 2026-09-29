@@ -148,16 +148,43 @@ export function applySplitColumns(root: ParentNode, split: string[], onResize: (
 
 let resizeObserver: ResizeObserver | undefined
 const observedCards = new WeakSet<Element>()
+const scrollInstalled = new WeakSet<Element>()
+
+interface StackState {
+  /** Scroll offset per stack: 0 = issues, 1 = pull requests. */
+  offsets: [number, number]
+  /** Content height per stack from the last layout, used to clamp the offsets. */
+  heights: [number, number]
+}
+
+const stackStates = new Map<string, StackState>()
+
+export function clampOffset(offset: number, stackHeight: number, viewport: number): number {
+  return Math.max(0, Math.min(offset, Math.max(0, stackHeight - viewport)))
+}
+
+function stateFor(name: string): StackState {
+  let state = stackStates.get(name)
+  if (!state) {
+    state = { offsets: [0, 0], heights: [0, 0] }
+    stackStates.set(name, state)
+  }
+  return state
+}
 
 /** Grid rows are shared by both stacks, so each row is as tall as its taller card and the other stack shows a
- *  gap. This pulls every card up to sit right below the previous card of its own stack. Transforms do not
- *  affect layout, so the virtualiser's bookkeeping is untouched; heights change as cards render, hence the
- *  ResizeObserver that asks for another pass. */
+ *  gap. This pulls every card up to sit right below the previous card of its own stack, minus that stack's own
+ *  scroll offset. Transforms do not affect layout, and GitHub's virtualiser renders by visual position, so
+ *  cards scrolled into the list's box still render. Heights change as cards render, hence the ResizeObserver. */
 function compactStacks(column: Element, onResize: () => void): void {
   const zone = column.querySelector<HTMLElement>('[data-dnd-drop-type="card"]')
   if (!zone) return
+  const name = column.getAttribute('data-board-column') ?? ''
+  const state = stateFor(name)
   if (!resizeObserver && typeof ResizeObserver !== 'undefined')
     resizeObserver = new ResizeObserver(() => onResize())
+  installStackScroll(zone, name, () => compactStacks(column, onResize))
+
   const tops = [0, 0]
   let base: number | undefined
   for (const el of zone.children) {
@@ -170,12 +197,44 @@ function compactStacks(column: Element, onResize: () => void): void {
     if (height === 0) continue // hidden
     base ??= el.offsetTop
     const stack = el.getAttribute('data-hovercard-subject-tag')?.startsWith('pull_request') ? 1 : 0
-    const shift = base + tops[stack]! - el.offsetTop
+    const shift = base + tops[stack]! - state.offsets[stack] - el.offsetTop
     const transform = shift ? `translateY(${shift}px)` : ''
     if (el.style.transform !== transform) el.style.transform = transform
     el.setAttribute('data-bd-shifted', '')
     tops[stack]! += height + parseFloat(getComputedStyle(el).marginBottom || '0')
   }
+  state.heights = [tops[0]!, tops[1]!]
+}
+
+/** Each stack scrolls on its own: the wheel moves whichever half of the list the pointer is over. The list
+ *  itself no longer scrolls natively (see content.css), so the browser would otherwise scroll the page. */
+function installStackScroll(zone: HTMLElement, name: string, relayout: () => void): void {
+  if (scrollInstalled.has(zone)) return
+  scrollInstalled.add(zone)
+  zone.addEventListener(
+    'wheel',
+    (event) => {
+      if (!zone.closest('[data-bd-split]')) return
+      const rect = zone.getBoundingClientRect()
+      const stack = event.clientX < rect.left + rect.width / 2 ? 0 : 1
+      const step = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1
+      const state = stateFor(name)
+      const next = clampOffset(
+        state.offsets[stack] + event.deltaY * step,
+        state.heights[stack],
+        rect.height,
+      )
+      if (next === state.offsets[stack]) return
+      event.preventDefault()
+      state.offsets[stack] = next
+      relayout()
+    },
+    { passive: false },
+  )
+}
+
+export function resetStackScroll(): void {
+  stackStates.clear()
 }
 
 export const UNASSIGNED_GROUP = 'Unassigned'
@@ -254,6 +313,7 @@ export function clearAll(root: ParentNode): void {
     el.style.transform = ''
     el.removeAttribute('data-bd-shifted')
   }
+  resetStackScroll()
   clearAssigneeGroups(root)
   document.documentElement.removeAttribute('data-bd-compact')
   document.documentElement.removeAttribute('data-bd-focus')

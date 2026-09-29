@@ -5,6 +5,7 @@ import {
   applyDecision,
   applyHiddenColumns,
   applySplitColumns,
+  clampOffset,
   chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
@@ -317,5 +318,14 @@ describe('chooseColumnStats', () => {
     expect(chooseColumnStats(dom, 82)).toBeUndefined()
     expect(chooseColumnStats({ ...dom, total: 82 }, 82)).toMatchObject({ total: 82 })
     expect(chooseColumnStats(dom, undefined)).toBeUndefined()
+  })
+})
+
+describe('clampOffset', () => {
+  it('keeps a stack offset between the top and the last screenful', () => {
+    expect(clampOffset(-10, 1000, 300)).toBe(0)
+    expect(clampOffset(500, 1000, 300)).toBe(500)
+    expect(clampOffset(900, 1000, 300)).toBe(700)
+    expect(clampOffset(50, 200, 300)).toBe(0)
   })
 })

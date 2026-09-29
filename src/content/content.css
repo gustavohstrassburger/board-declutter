@@ -127,6 +127,7 @@ html[data-bd-focus]:not([data-bd-peek])
 }
 
 [data-board-column][data-bd-split] [data-dnd-drop-type='card'] {
+  overflow: hidden !important; /* each stack scrolls on its own, via transforms (see apply.ts) */
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
   grid-auto-flow: row dense !important;
