@@ -50,6 +50,11 @@ export class Toolbar {
       () => ({ compact: !this.settings.compact }),
     )
     this.addToggle(
+      'focus',
+      () => (this.settings.focus ? 'Focus ✓' : 'Focus'),
+      () => ({ focus: !this.settings.focus }),
+    )
+    this.addToggle(
       'groupByAssignee',
       () => (this.settings.groupByAssignee ? 'By assignee ✓' : 'By assignee'),
       () => ({ groupByAssignee: !this.settings.groupByAssignee }),

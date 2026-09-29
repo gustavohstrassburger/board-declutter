@@ -177,4 +177,5 @@ export function clearAll(root: ParentNode): void {
     el.removeAttribute('data-bd-collapsed')
   clearAssigneeGroups(root)
   document.documentElement.removeAttribute('data-bd-compact')
+  document.documentElement.removeAttribute('data-bd-focus')
 }

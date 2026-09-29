@@ -32,6 +32,8 @@ export interface Settings {
   compact: boolean
   /** Sort every column by assignee (GitHub's own sort, via the URL) and label the first card of each run. */
   groupByAssignee: boolean
+  /** Hide everything on the page that is not the board; moving the mouse to the top edge reveals it. */
+  focus: boolean
   /** Your GitHub login: cards assigned to you get highlighted and are never hidden. */
   me: string
 }

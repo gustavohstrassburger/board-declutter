@@ -25,6 +25,7 @@ function fill(settings: Settings): void {
   field<HTMLInputElement>('me').value = settings.me
   field<HTMLInputElement>('compact').checked = settings.compact
   field<HTMLInputElement>('groupByAssignee').checked = settings.groupByAssignee
+  field<HTMLInputElement>('focus').checked = settings.focus
   for (const name of MODE_FIELDS) field<HTMLSelectElement>(name).value = settings[name]
   for (const name of LIST_FIELDS) field<HTMLTextAreaElement>(name).value = settings[name].join('\n')
 }
@@ -35,6 +36,7 @@ function read(current: Settings): Settings {
     me: field<HTMLInputElement>('me').value.trim(),
     compact: field<HTMLInputElement>('compact').checked,
     groupByAssignee: field<HTMLInputElement>('groupByAssignee').checked,
+    focus: field<HTMLInputElement>('focus').checked,
   }
   for (const name of MODE_FIELDS) next[name] = field<HTMLSelectElement>(name).value as Mode
   for (const name of LIST_FIELDS) next[name] = parseList(field<HTMLTextAreaElement>(name).value)

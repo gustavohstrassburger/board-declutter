@@ -14,6 +14,7 @@ import {
   resetStaleDecisions,
 } from './apply'
 import { parseBoard, SELECTORS } from './dom'
+import { installPeek } from './focus'
 import { ensureAssigneeSort } from './sort'
 import { Toolbar } from './toolbar'
 
@@ -68,6 +69,7 @@ function apply(): void {
   if (settings.groupByAssignee) markAssigneeGroups(board, entries)
   else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)
+  document.documentElement.toggleAttribute('data-bd-focus', settings.focus)
 
   toolbar?.update({ total, hidden, dimmed })
 }
@@ -94,6 +96,10 @@ async function main(): Promise<void> {
   // Toolbar clicks only persist; the storage change event then drives the update, so each change is applied once.
   toolbar = new Toolbar(settings, (patch) => saveSettings({ ...settings, ...patch }))
   onSettingsChange(updateSettings)
+  installPeek(
+    document.documentElement,
+    () => document.querySelector(SELECTORS.board)?.getBoundingClientRect().top,
+  )
 
   // GitHub navigates between views without a full reload and virtualises cards while scrolling,
   // so re-apply on every subtree change. `apply` is idempotent and cheap.

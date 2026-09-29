@@ -76,6 +76,20 @@
   text-overflow: ellipsis;
 }
 
+/* Focus mode. Class names on the project page are hashed, so the chrome is located by its position relative
+   to stable ids: GitHub's banner, the project title bar (sibling of #memex-project-view-root), the view tabs
+   (children of that root that are not the tab panel) and the filter bar (sibling of the board container). */
+html[data-bd-focus]:not([data-bd-peek]) header[role='banner'],
+html[data-bd-focus]:not([data-bd-peek])
+  div:has(> #memex-project-view-root)
+  > :not(#memex-project-view-root),
+html[data-bd-focus]:not([data-bd-peek]) #memex-project-view-root > :not([role='tabpanel']),
+html[data-bd-focus]:not([data-bd-peek])
+  [role='tabpanel']:has(#project-items-region)
+  > :not(:has(#project-items-region)) {
+  display: none !important;
+}
+
 /* Placeholders (virtualised, empty) must not show our pseudo-elements. */
 [data-board-card-id]:empty::before,
 [data-board-card-id]:empty::after {

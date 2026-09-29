@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   collapsedColumns: [],
   compact: false,
   groupByAssignee: false,
+  focus: false,
   me: '',
 }
 
