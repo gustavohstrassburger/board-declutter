@@ -139,9 +139,9 @@ export function describeMissingProject(
   if (Array.isArray(errors) && errors.length) return describeErrors(errors)
   const owner = ref.kind === 'orgs' ? `organization "${ref.owner}"` : `user "${ref.owner}"`
   if (ownerMissing) {
-    return `the ${owner} is not visible to this token. For a classic token, authorize it for the organization under "Configure SSO"; a fine-grained token must have "${ref.owner}" as its resource owner.`
+    return `the ${owner} is not visible to this token. A fine-grained token must have "${ref.owner}" as its resource owner (and be approved by the organization if it requires that); a classic token must be authorized under "Configure SSO".`
   }
-  return `project #${ref.number} of ${owner} is not visible to this token. A classic token needs the "read:project" scope; a fine-grained token needs the organization permission "Projects: read".`
+  return `project #${ref.number} of ${owner} is not visible to this token. A fine-grained token needs the organization permission "Projects: read"; a classic token needs the "read:project" scope.`
 }
 
 export async function fetchEnrichment(

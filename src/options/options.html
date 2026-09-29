@@ -117,11 +117,11 @@
             Personal access token
             <input name="githubToken" type="password" autocomplete="off" />
             <small>
-              Needs read access to the repositories on your boards and to the project itself
-              (classic:
-              <code>repo</code> and <code>read:project</code>; fine-grained: Issues, Pull requests
-              and Projects read). Kept in this browser profile only, never synced, and only sent to
-              <code>api.github.com</code>.
+              Fine-grained token with the organization as resource owner, organization permission
+              <code>Projects: read</code> and repository permissions <code>Issues: read</code> and
+              <code>Pull requests: read</code> (classic: <code>repo</code> and
+              <code>read:project</code>, where the organization still allows them). Kept in this
+              browser profile only, never synced, and only sent to <code>api.github.com</code>.
             </small>
           </label>
         </section>

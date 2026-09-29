@@ -42,7 +42,7 @@ Recommended first setup for a team board:
 
 1. Put your GitHub login in **Your GitHub login**.
 2. List your team members and team labels (e.g. `team/feature-flags`).
-3. Add a token with read access to the repositories on the board and to the project (classic `repo` + `read:project`, or a fine-grained token with Issues, Pull requests and Projects read).
+3. Add a GitHub token. Create a fine-grained token with the organization as resource owner, organization permission Projects: read, and repository permissions Issues: read and Pull requests: read for the repositories on the board. Organizations that still allow classic tokens can use one with `repo` and `read:project` instead, authorized for SSO.
 4. Set **Bot-authored PRs** and **Cards from other teams** to `dim` or `hide`, and collapse `Done`.
 
 `bin/build --zip` produces a zip for sharing or uploading to the Chrome Web Store.
