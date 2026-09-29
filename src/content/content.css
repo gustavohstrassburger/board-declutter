@@ -15,9 +15,14 @@
   filter: none;
 }
 
-/* On the card's own box, not the card element, so the group header above it stays unmarked. */
+/* On the card's own box, not the card element, so the group header above it stays unmarked.
+   A full accent border, a tinted background and a thick left bar: your cards must be findable at a glance. */
 [data-board-card-id][data-bd-highlight] > :not(.bd-group-header) {
-  box-shadow: inset 3px 0 0 var(--fgColor-accent, #2f81f7);
+  background-color: var(--bgColor-accent-muted, rgba(56, 139, 253, 0.15)) !important;
+  border-color: var(--borderColor-accent-emphasis, #1f6feb) !important;
+  box-shadow:
+    inset 4px 0 0 var(--fgColor-accent, #2f81f7),
+    0 0 0 1px var(--borderColor-accent-emphasis, #1f6feb);
 }
 
 [data-board-card-id][data-bd-reasons] {
