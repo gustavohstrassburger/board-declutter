@@ -42,6 +42,8 @@ export interface Settings {
   /** Lay `splitColumns` out as two stacks, issues left and PRs right, newest first (GitHub's sort by Created). */
   split: boolean
   splitColumns: string[]
+  /** Fetch every page of each column as soon as the board opens, instead of on scroll. */
+  preloadColumns: boolean
   /** Your GitHub login: cards assigned to you get highlighted and are never hidden. */
   me: string
 }

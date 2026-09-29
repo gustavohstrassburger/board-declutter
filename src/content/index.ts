@@ -17,6 +17,7 @@ import {
 } from './apply'
 import { parseBoard, SELECTORS } from './dom'
 import { installPeek } from './focus'
+import { ColumnPreloader } from './preload'
 import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT } from './sort'
 import { Toolbar } from './toolbar'
 import { viewShowsLabels } from './view'
@@ -26,6 +27,7 @@ let settings: Settings
 let version = 0
 let toolbar: Toolbar | undefined
 let scheduled = false
+const preloader = new ColumnPreloader(() => schedule())
 
 function schedule(): void {
   if (scheduled) return
@@ -79,6 +81,7 @@ function apply(): void {
   applyCollapsedColumns(board, settings.collapsedColumns)
   applyHiddenColumns(board, settings.hiddenColumns)
   applySplitColumns(board, settings.split ? settings.splitColumns : [])
+  if (settings.preloadColumns) preloader.run(board)
   if (settings.groupByAssignee) markAssigneeGroups(board, entries)
   else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)

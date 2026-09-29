@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: Settings = {
   focus: false,
   split: false,
   splitColumns: ['No Status'],
+  preloadColumns: true,
   me: '',
 }
 

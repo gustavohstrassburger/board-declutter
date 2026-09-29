@@ -74,6 +74,13 @@
             <input name="compact" type="checkbox" /> Compact cards (single-line titles, no labels)
           </label>
           <label class="check">
+            <input name="preloadColumns" type="checkbox" /> Load whole columns when the board opens
+            <small>
+              GitHub fetches a column page by page as you scroll; this scrolls each column for you
+              once, so counts and splits cover every card from the start.
+            </small>
+          </label>
+          <label class="check">
             <input name="focus" type="checkbox" /> Focus mode: hide everything around the board
             <small>
               GitHub's header, the project title bar, the view tabs and the filter bar disappear.
