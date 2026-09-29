@@ -2,13 +2,7 @@ import { DEFAULT_SETTINGS, loadSettings, parseList, saveSettings } from '../core
 import type { Mode, Settings } from '../core/types'
 
 const MODES: Mode[] = ['show', 'dim', 'hide']
-const LIST_FIELDS = [
-  'teamMembers',
-  'teamLabels',
-  'titlePatterns',
-  'collapsedColumns',
-  'hiddenColumns',
-] as const
+const LIST_FIELDS = ['teamMembers', 'teamLabels', 'titlePatterns', 'collapsedColumns'] as const
 const MODE_FIELDS = ['unassignedMode', 'otherTeamsMode'] as const
 
 const form = document.querySelector<HTMLFormElement>('#form')!

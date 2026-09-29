@@ -17,7 +17,7 @@ Every card on a board gets evaluated against a small set of rules. Each rule can
 On top of that:
 
 - **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number only appears once the column is fully loaded.
-- **Hidden and collapsed columns**: remove columns like "Done" or "No Status" from the board, or fold them into a thin strip.
+- **Hidden and collapsed columns**: the toolbar's **Columns** button lists the board's columns with a checkbox each, so "Done" or "No Status" can be removed in one click; the options page can also fold columns into a thin strip.
 - **Compact mode**: single-line titles, no label chips.
 - **Group by assignee**: every column ordered by assignee, with the assignees' avatars and name as a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
 - **Focus mode**: hides GitHub's header, the project title bar, the view tabs and the filter bar so the board gets the whole window. Push the mouse against the top edge to bring them back.

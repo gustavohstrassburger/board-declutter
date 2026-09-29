@@ -44,7 +44,7 @@ function apply(): void {
 
   if (!settings.enabled) {
     clearAll(board)
-    toolbar?.update({ total: 0, hidden: 0, dimmed: 0 })
+    toolbar?.update({ total: 0, hidden: 0, dimmed: 0, columns: columnNames(board) })
     return
   }
 
@@ -73,7 +73,13 @@ function apply(): void {
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)
   document.documentElement.toggleAttribute('data-bd-focus', settings.focus)
 
-  toolbar?.update({ total, hidden, dimmed })
+  toolbar?.update({ total, hidden, dimmed, columns: columnNames(board) })
+}
+
+function columnNames(board: Element): string[] {
+  return [...board.querySelectorAll(SELECTORS.column)].map(
+    (c) => c.getAttribute('data-board-column') ?? '',
+  )
 }
 
 function toolbarVisible(visible: boolean): void {

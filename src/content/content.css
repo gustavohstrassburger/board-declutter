@@ -207,3 +207,50 @@ html[data-bd-compact] [data-board-card-id][data-bd-reasons]::after {
 .bd-toolbar__btn--icon {
   padding: 4px 8px;
 }
+
+.bd-toolbar__dropdown {
+  position: relative;
+}
+
+.bd-toolbar__menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  min-width: 180px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 6px;
+  border-radius: 8px;
+  color: var(--fgColor-default, #e6edf3);
+  background: var(--overlay-bgColor, #161b22);
+  border: 1px solid var(--borderColor-default, #30363d);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.bd-toolbar__menu[hidden] {
+  display: none;
+}
+
+.bd-toolbar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bd-toolbar__menu-item:hover {
+  background: var(--bgColor-muted, #21262d);
+}
+
+.bd-toolbar__menu-item input {
+  margin: 0;
+}
+
+.bd-toolbar__menu-empty {
+  display: block;
+  padding: 4px 6px;
+  color: var(--fgColor-muted, #8b949e);
+}

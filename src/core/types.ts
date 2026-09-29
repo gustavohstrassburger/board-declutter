@@ -29,7 +29,7 @@ export interface Settings {
   titlePatterns: string[]
   /** Column names to fold into a thin strip (e.g. "Done"). */
   collapsedColumns: string[]
-  /** Column names to remove from view entirely (e.g. "Done", "No Status"). */
+  /** Column names removed from view entirely; managed from the toolbar's Columns menu. */
   hiddenColumns: string[]
   compact: boolean
   /** Sort every column by assignee (GitHub's own sort, via the URL) and label the first card of each run. */
