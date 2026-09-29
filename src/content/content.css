@@ -139,6 +139,7 @@ html[data-bd-focus]:not([data-bd-peek])
   grid-column: 1 !important;
   width: auto !important;
   max-width: none !important;
+  will-change: transform;
 }
 
 [data-board-column][data-bd-split]

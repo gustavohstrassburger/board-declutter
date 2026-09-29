@@ -118,15 +118,22 @@ export function applyHiddenColumns(root: ParentNode, hidden: string[]): void {
 /** Two stacks inside one column, issues left and PRs right. A CSS grid on the card list does the layout (see
  *  content.css); the card type comes from `data-hovercard-subject-tag`, which even virtualised placeholders
  *  carry. The stack titles are a small row appended to the column header, which is static React output. */
-export function applySplitColumns(root: ParentNode, split: string[]): void {
+export function applySplitColumns(root: ParentNode, split: string[], onResize: () => void): void {
   markColumns(root, split, 'data-bd-split')
   for (const column of root.querySelectorAll(SELECTORS.column)) {
     const header = column.firstElementChild
     const existing = column.querySelector(':scope > .bd-split-header')
     if (!column.hasAttribute('data-bd-split')) {
       existing?.remove()
+      for (const card of column.querySelectorAll<HTMLElement>(
+        '[data-board-card-id][data-bd-shifted]',
+      )) {
+        card.style.transform = ''
+        card.removeAttribute('data-bd-shifted')
+      }
       continue
     }
+    compactStacks(column, onResize)
     if (existing || !header) continue
     const row = document.createElement('div')
     row.className = 'bd-split-header'
@@ -136,6 +143,38 @@ export function applySplitColumns(root: ParentNode, split: string[]): void {
       row.appendChild(cell)
     }
     header.insertAdjacentElement('afterend', row)
+  }
+}
+
+let resizeObserver: ResizeObserver | undefined
+const observedCards = new WeakSet<Element>()
+
+/** Grid rows are shared by both stacks, so each row is as tall as its taller card and the other stack shows a
+ *  gap. This pulls every card up to sit right below the previous card of its own stack. Transforms do not
+ *  affect layout, so the virtualiser's bookkeeping is untouched; heights change as cards render, hence the
+ *  ResizeObserver that asks for another pass. */
+function compactStacks(column: Element, onResize: () => void): void {
+  const zone = column.querySelector<HTMLElement>('[data-dnd-drop-type="card"]')
+  if (!zone) return
+  if (!resizeObserver && typeof ResizeObserver !== 'undefined')
+    resizeObserver = new ResizeObserver(() => onResize())
+  const tops = [0, 0]
+  let base: number | undefined
+  for (const el of zone.children) {
+    if (!(el instanceof HTMLElement) || !el.hasAttribute('data-board-card-id')) continue
+    if (!observedCards.has(el) && resizeObserver) {
+      resizeObserver.observe(el)
+      observedCards.add(el)
+    }
+    const height = el.offsetHeight
+    if (height === 0) continue // hidden
+    base ??= el.offsetTop
+    const stack = el.getAttribute('data-hovercard-subject-tag')?.startsWith('pull_request') ? 1 : 0
+    const shift = base + tops[stack]! - el.offsetTop
+    const transform = shift ? `translateY(${shift}px)` : ''
+    if (el.style.transform !== transform) el.style.transform = transform
+    el.setAttribute('data-bd-shifted', '')
+    tops[stack]! += height + parseFloat(getComputedStyle(el).marginBottom || '0')
   }
 }
 
@@ -211,6 +250,10 @@ export function clearAll(root: ParentNode): void {
     el.removeAttribute('data-bd-hidden-column')
   for (const el of root.querySelectorAll('[data-bd-split]')) el.removeAttribute('data-bd-split')
   for (const el of root.querySelectorAll('.bd-split-header')) el.remove()
+  for (const el of root.querySelectorAll<HTMLElement>('[data-bd-shifted]')) {
+    el.style.transform = ''
+    el.removeAttribute('data-bd-shifted')
+  }
   clearAssigneeGroups(root)
   document.documentElement.removeAttribute('data-bd-compact')
   document.documentElement.removeAttribute('data-bd-focus')

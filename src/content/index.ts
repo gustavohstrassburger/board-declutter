@@ -80,7 +80,7 @@ function apply(): void {
   }
   applyCollapsedColumns(board, settings.collapsedColumns)
   applyHiddenColumns(board, settings.hiddenColumns)
-  applySplitColumns(board, settings.split ? settings.splitColumns : [])
+  applySplitColumns(board, settings.split ? settings.splitColumns : [], schedule)
   if (settings.preloadColumns) preloader.run(board)
   if (settings.groupByAssignee) markAssigneeGroups(board, entries)
   else clearAssigneeGroups(board)
