@@ -10,6 +10,24 @@ export interface ToolbarState {
 }
 
 const MODE_LABEL: Record<Mode, string> = { show: 'show', dim: 'dim', hide: 'hide' }
+const COLLAPSED_KEY = 'bd-toolbar-collapsed'
+
+/** Per-browser convenience, so it lives in localStorage and may be unavailable (private mode); default expanded. */
+function loadCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function saveCollapsed(collapsed: boolean): void {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0')
+  } catch {
+    // ignore
+  }
+}
 const NEXT_MODE: Record<Mode, Mode> = { show: 'dim', dim: 'hide', hide: 'show' }
 
 /** A floating panel appended to <body>, deliberately outside the React-managed board tree. */
@@ -19,6 +37,8 @@ export class Toolbar {
   private buttons = new Map<string, HTMLButtonElement>()
   private columnsMenu: HTMLElement
   private columns: string[] = []
+  private expandButton: HTMLButtonElement
+  private lastState: ToolbarState = { total: 0, hidden: 0, dimmed: 0, columns: [] }
 
   constructor(
     private settings: Settings,
@@ -28,6 +48,14 @@ export class Toolbar {
     this.root.className = 'bd-toolbar'
     this.root.setAttribute('role', 'toolbar')
     this.root.setAttribute('aria-label', 'Board Declutter')
+
+    // Shown only while collapsed: a small pill with the hidden count that expands the bar again.
+    this.expandButton = document.createElement('button')
+    this.expandButton.type = 'button'
+    this.expandButton.className = 'bd-toolbar__btn bd-toolbar__expand'
+    this.expandButton.title = 'Expand Board Declutter toolbar'
+    this.expandButton.addEventListener('click', () => this.setCollapsed(false))
+    this.root.appendChild(this.expandButton)
 
     this.summary = document.createElement('span')
     this.summary.className = 'bd-toolbar__summary'
@@ -74,8 +102,29 @@ export class Toolbar {
     options.addEventListener('click', () => chrome.runtime.sendMessage({ type: 'open-options' }))
     this.root.appendChild(options)
 
+    const collapse = document.createElement('button')
+    collapse.type = 'button'
+    collapse.className = 'bd-toolbar__btn bd-toolbar__btn--icon'
+    collapse.title = 'Minimize toolbar'
+    collapse.setAttribute('aria-label', 'Minimize toolbar')
+    collapse.textContent = '–'
+    collapse.addEventListener('click', () => this.setCollapsed(true))
+    this.root.appendChild(collapse)
+
     document.body.appendChild(this.root)
+    this.setCollapsed(loadCollapsed())
     this.render()
+  }
+
+  private setCollapsed(collapsed: boolean): void {
+    this.root.toggleAttribute('data-collapsed', collapsed)
+    saveCollapsed(collapsed)
+    this.renderExpandButton()
+  }
+
+  private renderExpandButton(): void {
+    const { hidden } = this.lastState
+    setText(this.expandButton, hidden ? `▴ ${hidden} hidden` : '▴')
   }
 
   private addToggle(key: string, label: () => string, patch: () => Partial<Settings>): void {
@@ -168,7 +217,9 @@ export class Toolbar {
   }
 
   update(state: ToolbarState): void {
+    this.lastState = state
     setText(this.summary, `${state.hidden} hidden · ${state.dimmed} dimmed · ${state.total} cards`)
+    this.renderExpandButton()
     this.columns = state.columns
     this.renderColumnsMenu()
   }

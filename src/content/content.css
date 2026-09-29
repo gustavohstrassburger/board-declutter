@@ -184,6 +184,19 @@ html[data-bd-compact] [data-board-card-id][data-bd-reasons]::after {
   display: none;
 }
 
+/* Minimized: everything but the expand pill goes away. */
+.bd-toolbar__expand {
+  display: none;
+}
+
+.bd-toolbar[data-collapsed] > :not(.bd-toolbar__expand) {
+  display: none;
+}
+
+.bd-toolbar[data-collapsed] > .bd-toolbar__expand {
+  display: inline-block;
+}
+
 .bd-toolbar[data-disabled] .bd-toolbar__btn:not(:first-of-type) {
   opacity: 0.5;
 }

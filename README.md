@@ -21,7 +21,7 @@ On top of that:
 - **Compact mode**: single-line titles, no label chips.
 - **Group by assignee**: every column ordered by assignee, with the assignees' avatars and name as a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
 - **Focus mode**: hides GitHub's header, the project title bar, the view tabs and the filter bar so the board gets the whole window. Push the mouse against the top edge to bring them back.
-- **Floating toolbar**: quick toggles for the rules without opening the options page.
+- **Floating toolbar**: quick toggles for the rules without opening the options page. It can be minimized to a small pill that keeps the hidden count.
 - **Reason badge**: dimmed cards show why ("no assignee · not your team") in the bottom-right corner.
 
 ## Install
