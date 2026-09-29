@@ -8,6 +8,8 @@ export const SELECTORS = {
   card: '[data-board-card-id]',
   cardTitle: 'h3[id^="board-card-title-"]',
   avatar: 'img[data-testid="github-avatar"]',
+  /** One per label when the view shows the Labels field. */
+  labelButton: 'button[aria-label^="Label: "]',
 } as const
 
 const ITEM_PATH = /^\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)$/
@@ -76,6 +78,16 @@ function itemLink(el: Element): RegExpMatchArray | undefined {
   return undefined
 }
 
+/** Labels render as a list of tokens (`button[aria-label="Label: x"]`); the figure form is kept as a fallback. */
+function cardLabels(el: Element, fields: Map<string, Field>): string[] {
+  const buttons = [...el.querySelectorAll(SELECTORS.labelButton)]
+  if (buttons.length === 0) return fields.get('labels')?.values ?? []
+  for (const button of buttons) button.closest('li')?.setAttribute('data-bd-field', 'label')
+  return buttons
+    .map((b) => (b.getAttribute('aria-label') ?? '').slice('Label: '.length).trim())
+    .filter(Boolean)
+}
+
 export function parseCard(el: Element): Card | null {
   const id = el.getAttribute('data-board-card-id')
   if (!id || !isRendered(el)) return null
@@ -104,7 +116,7 @@ export function parseCard(el: Element): Card | null {
     type,
     assignees: fields.get('assignees')?.values ?? [],
     avatars: fields.get('assignees')?.avatars,
-    labels: fields.get('labels')?.values ?? [],
+    labels: cardLabels(el, fields),
   }
 }
 

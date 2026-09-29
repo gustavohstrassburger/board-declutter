@@ -39,6 +39,18 @@
         <section>
           <h2>Noise</h2>
           <label>
+            AI-generated cards
+            <select name="aiMode" data-mode></select>
+            <small>
+              Recognised by label. The view must show the Labels field (View → Fields → Labels) for
+              this rule to see them; the toolbar warns when it does not.
+            </small>
+          </label>
+          <label>
+            Labels that mark a card as AI-generated (one per line)
+            <textarea name="aiLabels" rows="2" placeholder="self-driving"></textarea>
+          </label>
+          <label>
             Cards with no assignee
             <select name="unassignedMode" data-mode></select>
           </label>

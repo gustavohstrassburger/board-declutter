@@ -7,6 +7,8 @@ export interface ToolbarState {
   dimmed: number
   /** Column names on the current board, in board order, hidden ones included. */
   columns: string[]
+  /** False when the view hides the Labels field, which blinds the AI rule. */
+  labelsVisible: boolean
 }
 
 const MODE_LABEL: Record<Mode, string> = { show: 'show', dim: 'dim', hide: 'hide' }
@@ -38,7 +40,13 @@ export class Toolbar {
   private columnsMenu: HTMLElement
   private columns: string[] = []
   private expandButton: HTMLButtonElement
-  private lastState: ToolbarState = { total: 0, hidden: 0, dimmed: 0, columns: [] }
+  private lastState: ToolbarState = {
+    total: 0,
+    hidden: 0,
+    dimmed: 0,
+    columns: [],
+    labelsVisible: true,
+  }
 
   constructor(
     private settings: Settings,
@@ -65,6 +73,11 @@ export class Toolbar {
       'enabled',
       () => (this.settings.enabled ? 'On' : 'Off'),
       () => ({ enabled: !this.settings.enabled }),
+    )
+    this.addToggle(
+      'aiMode',
+      () => `AI: ${MODE_LABEL[this.settings.aiMode]}`,
+      () => ({ aiMode: NEXT_MODE[this.settings.aiMode] }),
     )
     this.addToggle(
       'unassignedMode',
@@ -218,14 +231,28 @@ export class Toolbar {
 
   update(state: ToolbarState): void {
     this.lastState = state
-    setText(this.summary, `${state.hidden} hidden · ${state.dimmed} dimmed · ${state.total} cards`)
+    this.renderSummary()
     this.renderExpandButton()
     this.columns = state.columns
     this.renderColumnsMenu()
   }
 
+  private renderSummary(): void {
+    const { hidden, dimmed, total, labelsVisible } = this.lastState
+    const blind = this.settings.aiMode !== 'show' && !labelsVisible
+    setText(
+      this.summary,
+      `${hidden} hidden · ${dimmed} dimmed · ${total} cards${blind ? ' · ⚠ labels hidden' : ''}`,
+    )
+    const title = blind
+      ? 'This view does not show the Labels field, so the AI rule cannot see the "self-driving" label. Enable it under View → Fields → Labels.'
+      : ''
+    if (this.summary.title !== title) this.summary.title = title
+  }
+
   private render(): void {
     this.root.toggleAttribute('data-disabled', !this.settings.enabled)
+    this.renderSummary()
     for (const btn of this.buttons.values()) {
       setText(btn, (btn as HTMLButtonElement & { bdLabel: () => string }).bdLabel())
     }

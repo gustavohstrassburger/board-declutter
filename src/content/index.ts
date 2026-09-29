@@ -18,6 +18,7 @@ import { parseBoard, SELECTORS } from './dom'
 import { installPeek } from './focus'
 import { ensureAssigneeSort } from './sort'
 import { Toolbar } from './toolbar'
+import { viewShowsLabels } from './view'
 
 let settings: Settings
 /** Bumped whenever settings change; see `applyDecision` for why decisions are stamped with it. */
@@ -44,7 +45,13 @@ function apply(): void {
 
   if (!settings.enabled) {
     clearAll(board)
-    toolbar?.update({ total: 0, hidden: 0, dimmed: 0, columns: columnNames(board) })
+    toolbar?.update({
+      total: 0,
+      hidden: 0,
+      dimmed: 0,
+      columns: columnNames(board),
+      labelsVisible: true,
+    })
     return
   }
 
@@ -73,7 +80,13 @@ function apply(): void {
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)
   document.documentElement.toggleAttribute('data-bd-focus', settings.focus)
 
-  toolbar?.update({ total, hidden, dimmed, columns: columnNames(board) })
+  toolbar?.update({
+    total,
+    hidden,
+    dimmed,
+    columns: columnNames(board),
+    labelsVisible: entries.length === 0 || viewShowsLabels(document, location.pathname),
+  })
 }
 
 function columnNames(board: Element): string[] {

@@ -150,7 +150,8 @@ html[data-bd-compact] [data-board-card-id] h3[id^='board-card-title-'] {
   font-size: 13px;
 }
 
-html[data-bd-compact] [data-board-card-id] figure[data-bd-field='labels'] {
+html[data-bd-compact] [data-board-card-id] figure[data-bd-field='labels'],
+html[data-bd-compact] [data-board-card-id] li[data-bd-field='label'] {
   display: none;
 }
 

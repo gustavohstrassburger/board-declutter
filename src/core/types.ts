@@ -18,6 +18,9 @@ export type Mode = 'show' | 'dim' | 'hide'
 
 export interface Settings {
   enabled: boolean
+  /** Labels that mark a card as AI-generated, e.g. "self-driving" on PRs opened by the PostHog bot. */
+  aiLabels: string[]
+  aiMode: Mode
   unassignedMode: Mode
   /** Logins of the people on your team. */
   teamMembers: string[]

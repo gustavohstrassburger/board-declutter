@@ -2,6 +2,8 @@ import type { Settings } from './types'
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
+  aiLabels: ['self-driving'],
+  aiMode: 'dim',
   unassignedMode: 'show',
   teamMembers: [],
   teamLabels: [],

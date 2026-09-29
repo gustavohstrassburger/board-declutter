@@ -15,6 +15,12 @@ export function belongsToTeam(card: Card, settings: Settings): boolean {
   return card.assignees.some((a) => members.has(normalizeLogin(a)))
 }
 
+/** The label that marks the card as AI-generated, if any. */
+export function aiLabel(card: Card, settings: Settings): string | undefined {
+  const wanted = new Set(settings.aiLabels.map((l) => l.trim().toLowerCase()))
+  return card.labels.find((l) => wanted.has(l.trim().toLowerCase()))
+}
+
 export function isMine(card: Card, settings: Settings): boolean {
   if (!settings.me) return false
   const me = normalizeLogin(settings.me)
@@ -48,6 +54,10 @@ function matchesTitlePattern(card: Card, settings: Settings): string | undefined
 export function evaluate(card: Card, settings: Settings): Decision {
   const triggered: { mode: Mode; reason: string }[] = []
 
+  const ai = aiLabel(card, settings)
+  if (ai !== undefined) {
+    triggered.push({ mode: settings.aiMode, reason: `AI-generated (${ai})` })
+  }
   if (card.assignees.length === 0 && card.type !== 'draft') {
     triggered.push({ mode: settings.unassignedMode, reason: 'no assignee' })
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { belongsToTeam, evaluate } from '../src/core/rules'
+import { aiLabel, belongsToTeam, evaluate } from '../src/core/rules'
 import { card, settings } from './fixtures'
 
 describe('belongsToTeam', () => {
@@ -18,6 +18,13 @@ describe('belongsToTeam', () => {
   })
 })
 
+describe('aiLabel', () => {
+  it('matches configured labels case-insensitively', () => {
+    expect(aiLabel(card({ labels: ['bug', 'Self-Driving'] }), settings())).toBe('Self-Driving')
+    expect(aiLabel(card({ labels: ['bug'] }), settings())).toBeUndefined()
+  })
+})
+
 describe('evaluate', () => {
   it('shows a plain card by default', () => {
     expect(evaluate(card({ assignees: ['x'] }), settings())).toEqual({
@@ -32,6 +39,15 @@ describe('evaluate', () => {
     const d = evaluate(card(), s)
     expect(d.mode).toBe('hide')
     expect(d.reasons).toEqual(['no assignee', 'not your team'])
+  })
+
+  it('dims AI-generated cards by default and reports the label', () => {
+    const d = evaluate(card({ assignees: ['x'], labels: ['self-driving'] }), settings())
+    expect(d).toMatchObject({ mode: 'dim', reasons: ['AI-generated (self-driving)'] })
+    expect(
+      evaluate(card({ assignees: ['x'], labels: ['self-driving'] }), settings({ aiMode: 'hide' }))
+        .mode,
+    ).toBe('hide')
   })
 
   it('does not treat draft items as unassigned', () => {

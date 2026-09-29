@@ -6,13 +6,14 @@ It was built for the PostHog Feature Flags board, where half of the "No Status" 
 
 ## What it does
 
-Every card on a board gets evaluated against a small set of rules. Each rule can **show**, **dim** or **hide** the card, and the strongest outcome wins. Cards assigned to you get a blue marker and are never hidden.
+Every card on a board gets evaluated against a small set of rules. The AI rule needs the view to show the Labels field (View → Fields → Labels); on the PostHog board the AI bot labels its PRs `self-driving`, which no human PR carries. Each rule can **show**, **dim** or **hide** the card, and the strongest outcome wins. Cards assigned to you get a blue marker and are never hidden.
 
-| Rule                                                               | Default |
-| ------------------------------------------------------------------ | ------- |
-| Cards with no assignee                                             | show    |
-| Cards from other teams (no team member assigned and no team label) | show    |
-| Titles matching a regex                                            | hide    |
+| Rule                                                                | Default |
+| ------------------------------------------------------------------- | ------- |
+| AI-generated cards, recognised by label (`self-driving` by default) | dim     |
+| Cards with no assignee                                              | show    |
+| Cards from other teams (no team member assigned and no team label)  | show    |
+| Titles matching a regex                                             | hide    |
 
 On top of that:
 
@@ -68,7 +69,7 @@ If GitHub changes the board markup, `src/content/dom.ts` is the only file that s
 
 These need data the card does not show, so they would need the GitHub API (a token) or GitHub's hovercard endpoint:
 
-- Hide or dim PRs opened by bots (the PostHog AI bot alone accounts for a third of the open cards). GitHub's board filter has no `author:` qualifier, so this is the biggest gap.
+- Recognise bot PRs by author rather than by label, for bots that do not label their PRs. GitHub's board filter has no `author:` qualifier.
 - Show how long a card has been in its column, to spot stale reviews.
 - Dim draft PRs and cards not updated for a while.
 - Group bot PRs into one collapsible stack per column.

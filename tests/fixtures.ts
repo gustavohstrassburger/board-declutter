@@ -29,10 +29,10 @@ export const CARD_HTML = `
         <div><div id="board-card-header-icon-231274630"><span></span></div><div id="board-card-header-title-231274630"><span>posthog #13147</span></div></div>
         <div>
           <figure><figcaption>Assignees: neilkakkar</figcaption><span data-component="AvatarStack"><div><span><img data-testid="github-avatar" alt="neilkakkar" src="https://avatars.githubusercontent.com/u/1"></span></div></span></figure>
-          <figure><figcaption>Labels: feature/cohorts, team/feature-flags</figcaption><span>feature/cohorts</span><span>team/feature-flags</span></figure>
         </div>
       </div></div></div>
       <a data-component="Link" role="button" href="https://github.com/PostHog/posthog/issues/13147" target="_blank"><h3 id="board-card-title-231274630"><span>Cohort Clickhouse Table revamp</span></h3></a>
+      <ul aria-label="Fields"><li><button aria-label="Label: feature/cohorts"><span><span>feature/cohorts</span></span></button></li><li><button aria-label="Label: team/feature-flags"><span><span>team/feature-flags</span></span></button></li></ul>
       </div>
     </div>
     <div data-board-card-id="248684323" data-hovercard-subject-tag="pull_request:4551206399" role="button" aria-label="fix(flags): keep replica schema lag" style="height: 125px;"></div>

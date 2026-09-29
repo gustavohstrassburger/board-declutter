@@ -63,9 +63,20 @@ describe('parseCard', () => {
     })
   })
 
-  it('tags field figures so CSS can target them', () => {
+  it('tags assignee figures and label tokens so CSS can target them', () => {
     parseCard(document.querySelector('[data-board-card-id="231274630"]')!)
-    expect(document.querySelectorAll('figure[data-bd-field="labels"]')).toHaveLength(1)
+    expect(document.querySelectorAll('figure[data-bd-field="assignees"]')).toHaveLength(1)
+    expect(document.querySelectorAll('li[data-bd-field="label"]')).toHaveLength(2)
+  })
+
+  it('falls back to a Labels figure when there are no label tokens', () => {
+    document.body.innerHTML = `<div data-board-column="C"><div><div data-board-card-id="1">
+      <div><figure><figcaption>Labels: a, b</figcaption></figure></div>
+      <a href="https://github.com/o/r/issues/1"><h3 id="board-card-title-1">t</h3></a></div></div></div>`
+    expect(parseCard(document.querySelector('[data-board-card-id="1"]')!)?.labels).toEqual([
+      'a',
+      'b',
+    ])
   })
 })
 
