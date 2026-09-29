@@ -63,20 +63,18 @@ async function persist(settings: Settings): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
-  fill(await loadSettings())
+// Handlers are attached synchronously: a submit that lands before the async load would otherwise be a native
+// GET submission that reloads the page with every field in the URL.
+form.addEventListener('submit', async (event) => {
+  event.preventDefault()
+  // Re-read storage so fields not on this form (e.g. the toolbar's On/Off) keep their latest value.
+  await persist(read(await loadSettings()))
+})
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault()
-    // Re-read storage so fields not on this form (e.g. the toolbar's On/Off) keep their latest value.
-    await persist(read(await loadSettings()))
-  })
+document.querySelector('#reset')!.addEventListener('click', async () => {
+  const settings = { ...DEFAULT_SETTINGS, me: field<HTMLInputElement>('me').value.trim() }
+  fill(settings)
+  await persist(settings)
+})
 
-  document.querySelector('#reset')!.addEventListener('click', async () => {
-    const settings = { ...DEFAULT_SETTINGS, me: field<HTMLInputElement>('me').value.trim() }
-    fill(settings)
-    await persist(settings)
-  })
-}
-
-void main()
+void loadSettings().then(fill)
