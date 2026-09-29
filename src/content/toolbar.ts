@@ -5,8 +5,6 @@ export interface ToolbarState {
   total: number
   hidden: number
   dimmed: number
-  enrichment: 'ok' | 'no-token' | 'error' | 'pending'
-  errorMessage?: string
 }
 
 const MODE_LABEL: Record<Mode, string> = { show: 'show', dim: 'dim', hide: 'hide' }
@@ -37,14 +35,9 @@ export class Toolbar {
       () => ({ enabled: !this.settings.enabled }),
     )
     this.addToggle(
-      'botMode',
-      () => `Bots: ${MODE_LABEL[this.settings.botMode]}`,
-      () => ({ botMode: NEXT_MODE[this.settings.botMode] }),
-    )
-    this.addToggle(
-      'draftMode',
-      () => `Drafts: ${MODE_LABEL[this.settings.draftMode]}`,
-      () => ({ draftMode: NEXT_MODE[this.settings.draftMode] }),
+      'unassignedMode',
+      () => `Unassigned: ${MODE_LABEL[this.settings.unassignedMode]}`,
+      () => ({ unassignedMode: NEXT_MODE[this.settings.unassignedMode] }),
     )
     this.addToggle(
       'otherTeamsMode',
@@ -91,17 +84,7 @@ export class Toolbar {
   }
 
   update(state: ToolbarState): void {
-    const parts = [`${state.hidden} hidden`, `${state.dimmed} dimmed`, `${state.total} cards`]
-    if (state.enrichment === 'no-token') parts.push('⚠ no token: author/draft rules off')
-    else if (state.enrichment === 'error') parts.push('⚠ GitHub API error')
-    else if (state.enrichment === 'pending') parts.push('… loading authors')
-    setText(this.summary, parts.join(' · '))
-    this.summary.title =
-      state.enrichment === 'no-token'
-        ? 'Add a GitHub token in the extension options to enable bot, draft, stale and team-author rules.'
-        : state.enrichment === 'error'
-          ? `GitHub API error: ${state.errorMessage || 'see the extension service worker console'}`
-          : ''
+    setText(this.summary, `${state.hidden} hidden · ${state.dimmed} dimmed · ${state.total} cards`)
   }
 
   private render(): void {

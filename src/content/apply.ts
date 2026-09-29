@@ -1,16 +1,10 @@
-import type { StageTag } from '../core/stage'
 import type { Card, Decision } from '../core/types'
 import { isRendered, SELECTORS } from './dom'
 
 /** Decisions are stamped with the settings version they were made under.
  *  GitHub's virtualiser turns a hidden (display: none) card into an empty placeholder, which we can no longer
  *  parse; the stamp lets `resetStaleDecisions` release those cards when the rules change so they render again. */
-export function applyDecision(
-  el: Element,
-  decision: Decision,
-  version: number,
-  key?: string,
-): void {
+export function applyDecision(el: Element, decision: Decision, version: number): void {
   if (decision.mode === 'show') el.removeAttribute('data-bd-mode')
   else el.setAttribute('data-bd-mode', decision.mode)
 
@@ -21,8 +15,6 @@ export function applyDecision(
   else el.removeAttribute('data-bd-reasons')
 
   el.setAttribute('data-bd-v', String(version))
-  if (key) el.setAttribute('data-bd-key', key)
-  else el.removeAttribute('data-bd-key')
 }
 
 export function clearDecision(el: Element): void {
@@ -30,21 +22,12 @@ export function clearDecision(el: Element): void {
   el.removeAttribute('data-bd-highlight')
   el.removeAttribute('data-bd-reasons')
   el.removeAttribute('data-bd-v')
-  el.removeAttribute('data-bd-key')
 }
 
 /** Un-hide placeholder cards decided under an older settings version so the board renders them for re-evaluation. */
 export function resetStaleDecisions(root: ParentNode, version: number): void {
   for (const el of root.querySelectorAll(SELECTORS.card)) {
     if (!isRendered(el) && el.getAttribute('data-bd-v') !== String(version)) clearDecision(el)
-  }
-}
-
-/** Release hidden placeholders whose enrichment just arrived: the new data may downgrade hide to dim (e.g. it is mine). */
-export function releasePlaceholders(root: ParentNode, keys: Set<string>): void {
-  for (const el of root.querySelectorAll(SELECTORS.card)) {
-    const key = el.getAttribute('data-bd-key')
-    if (key && keys.has(key) && !isRendered(el)) clearDecision(el)
   }
 }
 
@@ -84,18 +67,13 @@ export function githubColumnCount(column: Element): number | undefined {
   return Number.isInteger(n) ? n : undefined
 }
 
-/** Stats are only worth showing when they cover the whole column: either from the project snapshot (when its
- *  total agrees with GitHub's counter, i.e. the view has no filter we don't know about) or from the DOM once
- *  every card shell is loaded. Otherwise the number would drift as the column lazy-loads. */
+/** Stats are only worth showing once every card shell of the column is in the DOM and evaluated; before that
+ *  the number would drift as the column lazy-loads. */
 export function chooseColumnStats(
   dom: ColumnStats,
   githubCount: number | undefined,
-  snapshot: ColumnStats | undefined,
 ): ColumnStats | undefined {
-  if (githubCount === undefined) return undefined
-  if (snapshot && snapshot.total === githubCount) return snapshot
-  if (dom.total === githubCount) return dom
-  return undefined
+  return githubCount !== undefined && dom.total === githubCount ? dom : undefined
 }
 
 /** Shows how many cards are actually visible right after GitHub's counter, e.g. "82" then "36 shown". */
@@ -127,14 +105,6 @@ export function applyCollapsedColumns(root: ParentNode, collapsed: string[]): vo
     if (names.has(name)) column.setAttribute('data-bd-collapsed', '')
     else column.removeAttribute('data-bd-collapsed')
   }
-}
-
-export function clearAll(root: ParentNode): void {
-  for (const el of root.querySelectorAll(SELECTORS.card)) clearDecision(el)
-  for (const el of root.querySelectorAll('.bd-col-count')) el.remove()
-  for (const el of root.querySelectorAll('[data-bd-collapsed]'))
-    el.removeAttribute('data-bd-collapsed')
-  document.documentElement.removeAttribute('data-bd-compact')
 }
 
 export const UNASSIGNED_GROUP = 'Unassigned'
@@ -200,29 +170,11 @@ export function clearAssigneeGroups(root: ParentNode): void {
   for (const el of root.querySelectorAll('.bd-group-header')) el.remove()
 }
 
-export function clearStageTags(root: ParentNode): void {
-  for (const el of root.querySelectorAll('.bd-stage')) el.remove()
-}
-
-/** A chip pinned to the top-right corner of the card's box, left of the avatars, saying how long the card
- *  has been in its column. It is appended to the box rather than woven into GitHub's header row, so it does
- *  not depend on that row's structure; it disappears with the box when the card is un-rendered. */
-export function applyStageTag(el: Element, tag: StageTag | undefined): void {
-  let chip = el.querySelector<HTMLElement>('.bd-stage')
-  if (!tag) {
-    chip?.remove()
-    el.removeAttribute('data-bd-stage')
-    return
-  }
-  const box = [...el.children].find((c) => !c.classList.contains('bd-group-header'))
-  if (!box) return
-  if (!chip) {
-    chip = document.createElement('span')
-    chip.className = 'bd-stage'
-    box.appendChild(chip)
-  }
-  setText(chip, tag.text)
-  if (chip.title !== tag.title) chip.title = tag.title
-  if (chip.dataset.level !== tag.level) chip.dataset.level = tag.level
-  if (el.getAttribute('data-bd-stage') !== tag.text) el.setAttribute('data-bd-stage', tag.text)
+export function clearAll(root: ParentNode): void {
+  for (const el of root.querySelectorAll(SELECTORS.card)) clearDecision(el)
+  for (const el of root.querySelectorAll('.bd-col-count')) el.remove()
+  for (const el of root.querySelectorAll('[data-bd-collapsed]'))
+    el.removeAttribute('data-bd-collapsed')
+  clearAssigneeGroups(root)
+  document.documentElement.removeAttribute('data-bd-compact')
 }

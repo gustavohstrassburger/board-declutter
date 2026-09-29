@@ -1,15 +1,9 @@
 import { DEFAULT_SETTINGS, loadSettings, parseList, saveSettings } from '../core/settings'
-import { loadToken, saveToken } from '../core/token'
 import type { Mode, Settings } from '../core/types'
 
 const MODES: Mode[] = ['show', 'dim', 'hide']
-const LIST_FIELDS = [
-  'botAuthors',
-  'teamMembers',
-  'teamLabels',
-  'titlePatterns',
-  'collapsedColumns',
-] as const
+const LIST_FIELDS = ['teamMembers', 'teamLabels', 'titlePatterns', 'collapsedColumns'] as const
+const MODE_FIELDS = ['unassignedMode', 'otherTeamsMode'] as const
 
 const form = document.querySelector<HTMLFormElement>('#form')!
 const status = document.querySelector<HTMLElement>('#status')!
@@ -29,20 +23,9 @@ for (const select of form.querySelectorAll<HTMLSelectElement>('select[data-mode]
 
 function fill(settings: Settings): void {
   field<HTMLInputElement>('me').value = settings.me
-  field<HTMLInputElement>('staleDays').value = String(settings.staleDays)
-  field<HTMLInputElement>('stageWarnDays').value = String(settings.stageWarnDays)
-  field<HTMLInputElement>('stageStaleDays').value = String(settings.stageStaleDays)
   field<HTMLInputElement>('compact').checked = settings.compact
   field<HTMLInputElement>('groupByAssignee').checked = settings.groupByAssignee
-  for (const name of [
-    'botMode',
-    'draftMode',
-    'unassignedMode',
-    'otherTeamsMode',
-    'staleMode',
-  ] as const) {
-    field<HTMLSelectElement>(name).value = settings[name]
-  }
+  for (const name of MODE_FIELDS) field<HTMLSelectElement>(name).value = settings[name]
   for (const name of LIST_FIELDS) field<HTMLTextAreaElement>(name).value = settings[name].join('\n')
 }
 
@@ -50,21 +33,10 @@ function read(current: Settings): Settings {
   const next: Settings = {
     ...current,
     me: field<HTMLInputElement>('me').value.trim(),
-    staleDays: Math.max(0, Number(field<HTMLInputElement>('staleDays').value) || 0),
-    stageWarnDays: Math.max(0, Number(field<HTMLInputElement>('stageWarnDays').value) || 0),
-    stageStaleDays: Math.max(0, Number(field<HTMLInputElement>('stageStaleDays').value) || 0),
     compact: field<HTMLInputElement>('compact').checked,
     groupByAssignee: field<HTMLInputElement>('groupByAssignee').checked,
   }
-  for (const name of [
-    'botMode',
-    'draftMode',
-    'unassignedMode',
-    'otherTeamsMode',
-    'staleMode',
-  ] as const) {
-    next[name] = field<HTMLSelectElement>(name).value as Mode
-  }
+  for (const name of MODE_FIELDS) next[name] = field<HTMLSelectElement>(name).value as Mode
   for (const name of LIST_FIELDS) next[name] = parseList(field<HTMLTextAreaElement>(name).value)
   return next
 }
@@ -77,7 +49,6 @@ function flash(text: string): void {
 async function persist(settings: Settings): Promise<void> {
   try {
     await saveSettings(settings)
-    await saveToken(field<HTMLInputElement>('githubToken').value.trim())
     flash('Saved')
   } catch (err) {
     flash(`Could not save: ${err instanceof Error ? err.message : String(err)}`)
@@ -86,7 +57,6 @@ async function persist(settings: Settings): Promise<void> {
 
 async function main(): Promise<void> {
   fill(await loadSettings())
-  field<HTMLInputElement>('githubToken').value = await loadToken()
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault()

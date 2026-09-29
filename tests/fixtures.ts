@@ -1,4 +1,4 @@
-import type { Card, Enrichment, Settings } from '../src/core/types'
+import type { Card, Settings } from '../src/core/types'
 import { DEFAULT_SETTINGS } from '../src/core/settings'
 
 export function settings(patch: Partial<Settings> = {}): Settings {
@@ -15,18 +15,6 @@ export function card(patch: Partial<Card> = {}): Card {
     type: 'pull_request',
     assignees: [],
     labels: [],
-    ...patch,
-  }
-}
-
-export function enrichment(patch: Partial<Enrichment> = {}): Enrichment {
-  return {
-    author: 'someone',
-    authorIsBot: false,
-    isDraft: false,
-    reviewDecision: null,
-    reviewers: [],
-    updatedAt: new Date().toISOString(),
     ...patch,
   }
 }

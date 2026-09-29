@@ -2,30 +2,14 @@ import type { Settings } from './types'
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
-  botAuthors: [
-    'posthog',
-    'trunk-io',
-    'posthog-js-upgrader',
-    'scheduled-actions-posthog',
-    'dependabot',
-    'github-actions',
-    'renovate',
-  ],
-  botMode: 'dim',
-  draftMode: 'show',
   unassignedMode: 'show',
   teamMembers: [],
   teamLabels: [],
   otherTeamsMode: 'show',
-  staleDays: 0,
-  staleMode: 'dim',
   titlePatterns: [],
   collapsedColumns: [],
   compact: false,
   groupByAssignee: false,
-  stageColumns: ['In Review', 'Approved'],
-  stageWarnDays: 3,
-  stageStaleDays: 7,
   me: '',
 }
 

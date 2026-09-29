@@ -2,32 +2,26 @@
 
 Chrome extension that makes GitHub Projects boards readable again when most of the cards are noise.
 
-It was built for the PostHog Feature Flags board, where roughly a third of the open cards are PRs opened by the PostHog AI bot, half of the "No Status" column is community issues nobody owns, and the "Done" column holds a couple hundred cards that never get archived. GitHub's own board filter can't help with the biggest problem: it has no `author:` qualifier, so there is no native way to separate bot PRs from human ones.
+It was built for the PostHog Feature Flags board, where half of the "No Status" column is community issues nobody owns and the "Done" column holds a couple hundred cards that never get archived. It works only with what the board already shows on each card: nothing leaves the browser, no token, no API calls.
 
 ## What it does
 
-Every card on a board gets evaluated against a small set of rules. Each rule can **show**, **dim** or **hide** the card, and the strongest outcome wins. Cards that are yours (author, assignee or requested reviewer) get a blue marker and are never hidden.
+Every card on a board gets evaluated against a small set of rules. Each rule can **show**, **dim** or **hide** the card, and the strongest outcome wins. Cards assigned to you get a blue marker and are never hidden.
 
-| Rule                                                                                       | Needs token | Default |
-| ------------------------------------------------------------------------------------------ | ----------- | ------- |
-| Bot-authored PRs (GitHub `Bot` accounts plus a configurable login list)                    | yes         | dim     |
-| Draft PRs                                                                                  | yes         | show    |
-| Cards with no assignee                                                                     | no          | show    |
-| Cards from other teams (no team member as author, assignee or reviewer, and no team label) | partly      | show    |
-| Stale cards (no update in N days)                                                          | yes         | off     |
-| Titles matching a regex                                                                    | no          | hide    |
+| Rule                                                               | Default |
+| ------------------------------------------------------------------ | ------- |
+| Cards with no assignee                                             | show    |
+| Cards from other teams (no team member assigned and no team label) | show    |
+| Titles matching a regex                                            | hide    |
 
 On top of that:
 
-- **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible once the rules ran, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number is only shown when it covers the whole column: with a token the extension evaluates every project item from the API; without one it waits until the column is fully loaded.
+- **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number only appears once the column is fully loaded.
 - **Collapsed columns**: fold columns like "Done" into a thin strip.
 - **Compact mode**: single-line titles, no label chips.
-- **Time in stage**: in the columns you pick (default "In Review" and "Approved"), each card gets a chip with how many days it has been sitting there, amber after 3 days and red after 7. Counted from when the column was last set, so it needs a token.
-- **Group by assignee**: every column ordered by assignee with a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
-- **Floating toolbar**: quick toggles for the most used rules without opening the options page.
-- **Reason badge**: dimmed cards show why ("bot author · draft PR") in the bottom-right corner.
-
-Author, draft, reviewer and last-update data is not on the card, so those rules need a GitHub token. With one, the extension loads the whole project through GraphQL (100 items per request, cached for 5 minutes in session storage), which also makes the column counts exact; cards from repositories the project query can't read fall back to per-item requests batched by 50. It only ever talks to `api.github.com`. The token is kept in this browser profile's local extension storage, never synced, and never handed to the content script running on github.com. Without a token, the DOM-only rules still work and the toolbar says which rules are off.
+- **Group by assignee**: every column ordered by assignee, with the assignees' avatars and name as a header on the first card of each group. GitHub does the ordering: the extension applies the board's own "sort by Assignees" through the URL, so it covers the whole column and not just the cards currently rendered. Turn it off to sort the view another way.
+- **Floating toolbar**: quick toggles for the rules without opening the options page.
+- **Reason badge**: dimmed cards show why ("no assignee · not your team") in the bottom-right corner.
 
 ## Install
 
@@ -42,8 +36,7 @@ Recommended first setup for a team board:
 
 1. Put your GitHub login in **Your GitHub login**.
 2. List your team members and team labels (e.g. `team/feature-flags`).
-3. Add a GitHub token. Create a fine-grained token with the organization as resource owner, organization permission Projects: read, and repository permissions Issues: read and Pull requests: read for the repositories on the board. Organizations that still allow classic tokens can use one with `repo` and `read:project` instead, authorized for SSO.
-4. Set **Bot-authored PRs** and **Cards from other teams** to `dim` or `hide`, and collapse `Done`.
+3. Set **Cards from other teams** and **Cards with no assignee** to `dim` or `hide`, and collapse `Done`.
 
 `bin/build --zip` produces a zip for sharing or uploading to the Chrome Web Store.
 
@@ -58,21 +51,23 @@ bin/fmt          # prettier + eslint --fix
 
 Layout:
 
-- `src/core/` – pure logic: settings, rule engine, GitHub GraphQL client. Fully unit tested.
-- `src/content/` – content script: reads cards from the board DOM, applies decisions as `data-bd-*` attributes, injects the floating toolbar. Styling lives in `content.css`.
-- `src/background/` – service worker: fetches enrichment with the stored token and caches it.
+- `src/core/` – pure logic: settings and the rule engine. Fully unit tested.
+- `src/content/` – content script: reads cards from the board DOM, applies decisions as `data-bd-*` attributes, injects the floating toolbar and the group headers. Styling lives in `content.css`.
+- `src/background/` – tiny service worker: opens the options page.
 - `src/options/` – settings page.
 - `scripts/` – esbuild bundling and the dependency-free icon generator.
 
 ### How the board is read
 
-GitHub Projects renders the board with hashed CSS class names, so the extension relies only on stable data attributes: columns are `[data-board-column]`, cards are `[data-board-card-id]`, the title is `h3[id^=board-card-title-]`, fields like assignees and labels are `<figure>` elements whose `<figcaption>` starts with the field name, and the item link is the card's `<a href>`. Cards are virtualised while scrolling, so a `MutationObserver` re-applies the rules on every DOM change; applying is idempotent and cheap. The toolbar and the per-column badge are the only nodes the extension adds to the page.
+GitHub Projects renders the board with hashed CSS class names, so the extension relies only on stable data attributes: columns are `[data-board-column]`, cards are `[data-board-card-id]`, the title is `h3[id^=board-card-title-]`, fields like assignees and labels are `<figure>` elements whose `<figcaption>` starts with the field name, and the item link is the card's `<a href>`. Cards are virtualised while scrolling, and while a page of items loads GitHub fills the shells with a skeleton, so a card is only evaluated once its real title is in the DOM. A `MutationObserver` re-applies the rules on every DOM change; applying is idempotent and cheap.
 
 If GitHub changes the board markup, `src/content/dom.ts` is the only file that should need updating, and `tests/dom.test.ts` holds a captured copy of the real markup to test against.
 
 ## Ideas not built yet
 
-- Group bot PRs into one collapsible stack per column instead of dimming them one by one.
-- Show CI status and review decision as a small strip on the card.
-- Read the author from GitHub's hovercard endpoint so no token is needed.
-- Sort cards inside a column by last update.
+These need data the card does not show, so they would need the GitHub API (a token) or GitHub's hovercard endpoint:
+
+- Hide or dim PRs opened by bots (the PostHog AI bot alone accounts for a third of the open cards). GitHub's board filter has no `author:` qualifier, so this is the biggest gap.
+- Show how long a card has been in its column, to spot stale reviews.
+- Dim draft PRs and cards not updated for a while.
+- Group bot PRs into one collapsible stack per column.

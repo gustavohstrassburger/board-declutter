@@ -2,7 +2,7 @@
   "name": "board-declutter",
   "version": "0.1.0",
   "private": true,
-  "description": "Chrome extension that declutters GitHub Projects boards: hide or dim bot PRs, drafts and other teams' cards.",
+  "description": "Chrome extension that declutters GitHub Projects boards using only what the board shows: hide or dim unassigned cards and other teams' work, group by assignee, compact cards.",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",

@@ -9,8 +9,8 @@
     <main>
       <h1>Board Declutter</h1>
       <p class="muted">
-        Rules run on every GitHub Projects board you open. Author, draft, reviewer and staleness
-        rules need a GitHub token; everything else works from what is visible on the card.
+        Rules run on every GitHub Projects board you open, using only what the board shows on each
+        card. Nothing leaves your browser.
       </p>
 
       <form id="form">
@@ -19,10 +19,7 @@
           <label>
             Your GitHub login
             <input name="me" placeholder="octocat" autocomplete="off" />
-            <small
-              >Cards you author, are assigned to or review get a blue marker and are never
-              hidden.</small
-            >
+            <small>Cards assigned to you get a blue marker and are never hidden.</small>
           </label>
           <label>
             Team members (one per line)
@@ -35,38 +32,15 @@
           <label>
             Cards from other teams
             <select name="otherTeamsMode" data-mode></select>
-            <small
-              >Applies to cards with no team member as author, assignee or reviewer and no team
-              label.</small
-            >
+            <small>Applies to cards with no team member assigned and no team label.</small>
           </label>
         </section>
 
         <section>
           <h2>Noise</h2>
           <label>
-            Bot-authored PRs
-            <select name="botMode" data-mode></select>
-          </label>
-          <label>
-            Bot logins (one per line, on top of GitHub's own bot accounts)
-            <textarea name="botAuthors" rows="4"></textarea>
-          </label>
-          <label>
-            Draft PRs
-            <select name="draftMode" data-mode></select>
-          </label>
-          <label>
             Cards with no assignee
             <select name="unassignedMode" data-mode></select>
-          </label>
-          <label>
-            Stale cards
-            <span class="row">
-              <select name="staleMode" data-mode></select>
-              after <input name="staleDays" type="number" min="0" step="1" class="narrow" /> days
-              without update (0 disables)
-            </span>
           </label>
           <label>
             Hide titles matching these regexes (one per line)
@@ -89,39 +63,6 @@
             <small>
               Uses GitHub's own "sort by Assignees" through the URL, so the whole column is ordered,
               and labels the first card of each group. Turn it off to sort the view another way.
-            </small>
-          </label>
-        </section>
-
-        <section>
-          <h2>Time in stage</h2>
-          <label>
-            Show how long each card has been in these columns (one per line)
-            <textarea name="stageColumns" rows="2" placeholder="In Review&#10;Approved"></textarea>
-            <small>Counted from when the column was last set. Needs a token.</small>
-          </label>
-          <label>
-            Thresholds
-            <span class="row">
-              amber after
-              <input name="stageWarnDays" type="number" min="0" step="1" class="narrow" /> days, red
-              after
-              <input name="stageStaleDays" type="number" min="0" step="1" class="narrow" /> days
-            </span>
-          </label>
-        </section>
-
-        <section>
-          <h2>GitHub token</h2>
-          <label>
-            Personal access token
-            <input name="githubToken" type="password" autocomplete="off" />
-            <small>
-              Fine-grained token with the organization as resource owner, organization permission
-              <code>Projects: read</code> and repository permissions <code>Issues: read</code> and
-              <code>Pull requests: read</code> (classic: <code>repo</code> and
-              <code>read:project</code>, where the organization still allows them). Kept in this
-              browser profile only, never synced, and only sent to <code>api.github.com</code>.
             </small>
           </label>
         </section>

@@ -3,12 +3,11 @@ import {
   applyCollapsedColumns,
   applyColumnStats,
   applyDecision,
-  applyStageTag,
+  chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
   collectColumnStats,
   markAssigneeGroups,
-  releasePlaceholders,
   resetStaleDecisions,
   setText,
 } from '../src/content/apply'
@@ -187,21 +186,6 @@ describe('own DOM writes', () => {
   })
 })
 
-describe('releasePlaceholders', () => {
-  it('releases only hidden placeholders whose enrichment arrived', () => {
-    const hide = { mode: 'hide' as const, highlight: false, reasons: ['x'] }
-    const placeholder = document.querySelector('[data-board-card-id="248684323"]')!
-    const rendered = document.querySelector('[data-board-card-id="500"]')!
-    applyDecision(placeholder, hide, 1, 'PostHog/posthog#1')
-    applyDecision(rendered, hide, 1, 'PostHog/posthog#2')
-    releasePlaceholders(document, new Set(['PostHog/posthog#3']))
-    expect(placeholder.getAttribute('data-bd-mode')).toBe('hide')
-    releasePlaceholders(document, new Set(['PostHog/posthog#1', 'PostHog/posthog#2']))
-    expect(placeholder.hasAttribute('data-bd-mode')).toBe(false)
-    expect(rendered.getAttribute('data-bd-mode')).toBe('hide')
-  })
-})
-
 describe('parseCard link safety', () => {
   it('ignores links to other hosts that merely mention github.com', () => {
     document.body.innerHTML = `<div data-board-column="X"><div><div data-board-card-id="7">
@@ -282,40 +266,12 @@ describe('markAssigneeGroups', () => {
   })
 })
 
-describe('applyStageTag', () => {
-  it('appends the chip to the card box, updates it in place and removes it', () => {
-    const el = document.querySelector('[data-board-card-id="231274630"]')!
-    applyStageTag(el, {
-      days: 4,
-      level: 'warn',
-      text: '4d',
-      title: '4 days in In Review (since 2026-09-24)',
-    })
-    const chip = el.querySelector<HTMLElement>('.bd-stage')!
-    expect(chip.parentElement).toBe(el.firstElementChild)
-    expect(chip.textContent).toBe('4d')
-    expect(chip.dataset.level).toBe('warn')
-    expect(el.getAttribute('data-bd-stage')).toBe('4d')
+describe('chooseColumnStats', () => {
+  const dom = { name: 'C', total: 25, hidden: 3, dimmed: 0 }
 
-    applyStageTag(el, { days: 9, level: 'stale', text: '9d', title: '9 days' })
-    expect(el.querySelectorAll('.bd-stage')).toHaveLength(1)
-    expect(chip.dataset.level).toBe('stale')
-
-    applyStageTag(el, undefined)
-    expect(el.querySelector('.bd-stage')).toBeNull()
-    expect(el.hasAttribute('data-bd-stage')).toBe(false)
-  })
-
-  it('skips the group header and does nothing on an empty placeholder', () => {
-    const el = document.querySelector('[data-board-card-id="231274630"]')!
-    const header = document.createElement('div')
-    header.className = 'bd-group-header'
-    el.prepend(header)
-    applyStageTag(el, { days: 1, level: 'ok', text: '1d', title: '' })
-    expect(el.querySelector('.bd-stage')?.parentElement).toBe(el.children[1])
-
-    const placeholder = document.querySelector('[data-board-card-id="248684323"]')!
-    applyStageTag(placeholder, { days: 1, level: 'ok', text: '1d', title: '' })
-    expect(placeholder.querySelector('.bd-stage')).toBeNull()
+  it('shows stats only once every shell is loaded and GitHub’s counter is known', () => {
+    expect(chooseColumnStats(dom, 82)).toBeUndefined()
+    expect(chooseColumnStats({ ...dom, total: 82 }, 82)).toMatchObject({ total: 82 })
+    expect(chooseColumnStats(dom, undefined)).toBeUndefined()
   })
 })

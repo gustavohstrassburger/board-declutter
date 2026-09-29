@@ -2,9 +2,8 @@
   "manifest_version": 3,
   "name": "Board Declutter",
   "version": "0.1.0",
-  "description": "Declutter GitHub Projects boards: hide or dim bot PRs, drafts, stale cards and other teams' work.",
+  "description": "Declutter GitHub Projects boards: hide or dim unassigned cards and other teams' work, group by assignee, compact cards.",
   "permissions": ["storage"],
-  "host_permissions": ["https://api.github.com/*"],
   "content_scripts": [
     {
       "matches": ["https://github.com/*"],
