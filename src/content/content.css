@@ -118,7 +118,8 @@ html[data-bd-focus]:not([data-bd-peek])
 }
 
 /* Split columns: the card list becomes a two-column grid. Explicit grid-column per card plus dense row packing
-   gives two independent stacks without touching the DOM order the virtualiser relies on. */
+   gives two independent stacks without touching the DOM order the virtualiser relies on. Everything is
+   !important because GitHub sets its own layout on the list, some of it inline. */
 [data-board-column][data-bd-split] {
   width: 700px !important;
   min-width: 700px !important;
@@ -127,38 +128,44 @@ html[data-bd-focus]:not([data-bd-peek])
 
 [data-board-column][data-bd-split] [data-dnd-drop-type='card'] {
   display: grid !important;
-  grid-template-columns: 1fr 1fr;
-  grid-auto-flow: row dense;
-  column-gap: 8px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-auto-flow: row dense !important;
+  grid-auto-rows: max-content !important;
+  column-gap: 8px !important;
+  align-items: start !important;
 }
 
-[data-board-column][data-bd-split] [data-dnd-drop-type='card']::before,
-[data-board-column][data-bd-split] [data-dnd-drop-type='card']::after {
-  grid-row: 1;
-  padding: 2px 4px 6px;
+[data-board-column][data-bd-split] [data-dnd-drop-type='card'] > [data-board-card-id] {
+  grid-column: 1 !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+[data-board-column][data-bd-split]
+  [data-dnd-drop-type='card']
+  > [data-board-card-id][data-hovercard-subject-tag^='pull_request'] {
+  grid-column: 2 !important;
+}
+
+/* Anything else GitHub puts in the list (drop indicators, "add item") spans both stacks. */
+[data-board-column][data-bd-split] [data-dnd-drop-type='card'] > :not([data-board-card-id]) {
+  grid-column: 1 / -1 !important;
+}
+
+.bd-split-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+  width: 100%;
+  margin-top: 6px;
   font-size: 11px;
   font-weight: 600;
   color: var(--fgColor-muted, #8b949e);
 }
 
-[data-board-column][data-bd-split] [data-dnd-drop-type='card']::before {
-  content: 'Issues';
-  grid-column: 1;
-}
-
-[data-board-column][data-bd-split] [data-dnd-drop-type='card']::after {
-  content: 'Pull requests';
-  grid-column: 2;
-}
-
-[data-board-column][data-bd-split] [data-board-card-id] {
-  grid-column: 1;
-}
-
-[data-board-column][data-bd-split]
-  [data-board-card-id][data-hovercard-subject-tag^='pull_request'] {
-  grid-column: 2;
+.bd-split-header span {
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--borderColor-muted, #21262d);
 }
 
 /* Collapsed columns */

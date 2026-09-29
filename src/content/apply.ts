@@ -115,10 +115,28 @@ export function applyHiddenColumns(root: ParentNode, hidden: string[]): void {
   markColumns(root, hidden, 'data-bd-hidden-column')
 }
 
-/** Two stacks inside one column, issues left and PRs right. Pure CSS grid on the card list (see content.css):
- *  the card type comes from `data-hovercard-subject-tag`, which even virtualised placeholders carry. */
+/** Two stacks inside one column, issues left and PRs right. A CSS grid on the card list does the layout (see
+ *  content.css); the card type comes from `data-hovercard-subject-tag`, which even virtualised placeholders
+ *  carry. The stack titles are a small row appended to the column header, which is static React output. */
 export function applySplitColumns(root: ParentNode, split: string[]): void {
   markColumns(root, split, 'data-bd-split')
+  for (const column of root.querySelectorAll(SELECTORS.column)) {
+    const header = column.firstElementChild
+    const existing = column.querySelector(':scope > .bd-split-header')
+    if (!column.hasAttribute('data-bd-split')) {
+      existing?.remove()
+      continue
+    }
+    if (existing || !header) continue
+    const row = document.createElement('div')
+    row.className = 'bd-split-header'
+    for (const text of ['Issues', 'Pull requests']) {
+      const cell = document.createElement('span')
+      cell.textContent = text
+      row.appendChild(cell)
+    }
+    header.insertAdjacentElement('afterend', row)
+  }
 }
 
 export const UNASSIGNED_GROUP = 'Unassigned'
@@ -192,6 +210,7 @@ export function clearAll(root: ParentNode): void {
   for (const el of root.querySelectorAll('[data-bd-hidden-column]'))
     el.removeAttribute('data-bd-hidden-column')
   for (const el of root.querySelectorAll('[data-bd-split]')) el.removeAttribute('data-bd-split')
+  for (const el of root.querySelectorAll('.bd-split-header')) el.remove()
   clearAssigneeGroups(root)
   document.documentElement.removeAttribute('data-bd-compact')
   document.documentElement.removeAttribute('data-bd-focus')

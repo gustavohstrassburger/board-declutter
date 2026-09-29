@@ -141,13 +141,21 @@ describe('apply', () => {
     expect(document.querySelector('[data-bd-hidden-column]')).toBeNull()
   })
 
-  it('marks columns to split and clearAll releases them', () => {
+  it('marks columns to split, adds the stack titles once, and clearAll releases them', () => {
     applySplitColumns(document, ['todo'])
-    expect(
-      document.querySelector('[data-board-column="Todo"]')?.hasAttribute('data-bd-split'),
-    ).toBe(true)
+    applySplitColumns(document, ['todo'])
+    const todo = document.querySelector('[data-board-column="Todo"]')!
+    expect(todo.hasAttribute('data-bd-split')).toBe(true)
+    expect(todo.querySelectorAll(':scope > .bd-split-header')).toHaveLength(1)
+    expect(todo.querySelector('.bd-split-header')?.previousElementSibling).toBe(
+      todo.firstElementChild,
+    )
+    applySplitColumns(document, [])
+    expect(document.querySelector('.bd-split-header')).toBeNull()
+    applySplitColumns(document, ['todo'])
     clearAll(document)
     expect(document.querySelector('[data-bd-split]')).toBeNull()
+    expect(document.querySelector('.bd-split-header')).toBeNull()
   })
 
   it('collapses columns case-insensitively and clearAll resets the board', () => {
