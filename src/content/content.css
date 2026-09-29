@@ -131,7 +131,9 @@ html[data-bd-focus]:not([data-bd-peek])
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
   grid-auto-flow: row dense !important;
-  grid-auto-rows: max-content !important;
+  /* Zero-height rows: a card's grid position never depends on the other stack's heights, so a card rendering
+     in one stack cannot move the other for a frame. The stacks' real layout is the transforms (apply.ts). */
+  grid-auto-rows: 0 !important;
   column-gap: 8px !important;
   align-items: start !important;
 }

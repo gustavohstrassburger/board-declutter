@@ -181,8 +181,16 @@ function compactStacks(column: Element, onResize: () => void): void {
   if (!zone) return
   const name = column.getAttribute('data-board-column') ?? ''
   const state = stateFor(name)
-  if (!resizeObserver && typeof ResizeObserver !== 'undefined')
-    resizeObserver = new ResizeObserver(() => onResize())
+  if (!resizeObserver && typeof ResizeObserver !== 'undefined') {
+    // Re-layout synchronously (ResizeObserver runs after layout, before paint) so a card that just rendered
+    // never shows in the wrong place; then let the regular pass update counts and groups.
+    resizeObserver = new ResizeObserver(() => {
+      for (const split of document.querySelectorAll('[data-board-column][data-bd-split]')) {
+        compactStacks(split, onResize)
+      }
+      onResize()
+    })
+  }
   installStackScroll(zone, name, () => compactStacks(column, onResize))
 
   const tops = [0, 0]
