@@ -5,6 +5,7 @@ import {
   applyCollapsedColumns,
   applyColumnStats,
   applyDecision,
+  applyHiddenColumns,
   chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
@@ -66,6 +67,7 @@ function apply(): void {
     dimmed += dom.dimmed
   }
   applyCollapsedColumns(board, settings.collapsedColumns)
+  applyHiddenColumns(board, settings.hiddenColumns)
   if (settings.groupByAssignee) markAssigneeGroups(board, entries)
   else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)

@@ -107,6 +107,11 @@ html[data-bd-focus]:not([data-bd-peek])
   cursor: default;
 }
 
+/* Hidden columns */
+[data-board-column][data-bd-hidden-column] {
+  display: none !important;
+}
+
 /* Collapsed columns */
 [data-board-column][data-bd-collapsed] {
   width: 56px !important;

@@ -3,6 +3,7 @@ import {
   applyCollapsedColumns,
   applyColumnStats,
   applyDecision,
+  applyHiddenColumns,
   chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
@@ -116,7 +117,20 @@ describe('apply', () => {
     expect(badge.previousElementSibling?.getAttribute('data-component')).toBe('CounterLabel')
   })
 
+  it('hides columns by name, case-insensitively, and releases them when the list changes', () => {
+    applyHiddenColumns(document, ['DONE', ' no status '])
+    expect(
+      document.querySelector('[data-board-column="Done"]')?.hasAttribute('data-bd-hidden-column'),
+    ).toBe(true)
+    expect(
+      document.querySelector('[data-board-column="Todo"]')?.hasAttribute('data-bd-hidden-column'),
+    ).toBe(false)
+    applyHiddenColumns(document, [])
+    expect(document.querySelector('[data-bd-hidden-column]')).toBeNull()
+  })
+
   it('collapses columns case-insensitively and clearAll resets the board', () => {
+    applyHiddenColumns(document, ['done'])
     applyCollapsedColumns(document, ['done'])
     expect(
       document.querySelector('[data-board-column="Done"]')?.hasAttribute('data-bd-collapsed'),
@@ -133,6 +147,7 @@ describe('apply', () => {
 
     clearAll(document)
     expect(document.querySelector('[data-bd-collapsed]')).toBeNull()
+    expect(document.querySelector('[data-bd-hidden-column]')).toBeNull()
     expect(document.querySelector('.bd-col-count')).toBeNull()
   })
 })

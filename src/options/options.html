@@ -51,8 +51,14 @@
         <section>
           <h2>Layout</h2>
           <label>
+            Hide these columns (one per line)
+            <textarea name="hiddenColumns" rows="2" placeholder="Done&#10;No Status"></textarea>
+            <small>Removed from the board entirely. Names must match the column headers.</small>
+          </label>
+          <label>
             Collapse these columns (one per line)
             <textarea name="collapsedColumns" rows="2" placeholder="Done"></textarea>
+            <small>Folded into a thin strip so they take no space but stay visible.</small>
           </label>
           <label class="check">
             <input name="compact" type="checkbox" /> Compact cards (single-line titles, no labels)

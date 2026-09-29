@@ -27,8 +27,10 @@ export interface Settings {
   otherTeamsMode: Mode
   /** Regexes; cards whose title matches are hidden. */
   titlePatterns: string[]
-  /** Column names to collapse entirely (e.g. "Done"). */
+  /** Column names to fold into a thin strip (e.g. "Done"). */
   collapsedColumns: string[]
+  /** Column names to remove from view entirely (e.g. "Done", "No Status"). */
+  hiddenColumns: string[]
   compact: boolean
   /** Sort every column by assignee (GitHub's own sort, via the URL) and label the first card of each run. */
   groupByAssignee: boolean

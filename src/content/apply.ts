@@ -98,13 +98,21 @@ export function applyColumnStats(column: Element, stats: ColumnStats | undefined
   badge.title = details.join(', ')
 }
 
-export function applyCollapsedColumns(root: ParentNode, collapsed: string[]): void {
-  const names = new Set(collapsed.map((c) => c.toLowerCase()))
+function markColumns(root: ParentNode, columnNames: string[], attribute: string): void {
+  const names = new Set(columnNames.map((c) => c.trim().toLowerCase()))
   for (const column of root.querySelectorAll(SELECTORS.column)) {
-    const name = column.getAttribute('data-board-column')?.toLowerCase() ?? ''
-    if (names.has(name)) column.setAttribute('data-bd-collapsed', '')
-    else column.removeAttribute('data-bd-collapsed')
+    const name = column.getAttribute('data-board-column')?.trim().toLowerCase() ?? ''
+    if (names.has(name)) column.setAttribute(attribute, '')
+    else column.removeAttribute(attribute)
   }
+}
+
+export function applyCollapsedColumns(root: ParentNode, collapsed: string[]): void {
+  markColumns(root, collapsed, 'data-bd-collapsed')
+}
+
+export function applyHiddenColumns(root: ParentNode, hidden: string[]): void {
+  markColumns(root, hidden, 'data-bd-hidden-column')
 }
 
 export const UNASSIGNED_GROUP = 'Unassigned'
@@ -175,6 +183,8 @@ export function clearAll(root: ParentNode): void {
   for (const el of root.querySelectorAll('.bd-col-count')) el.remove()
   for (const el of root.querySelectorAll('[data-bd-collapsed]'))
     el.removeAttribute('data-bd-collapsed')
+  for (const el of root.querySelectorAll('[data-bd-hidden-column]'))
+    el.removeAttribute('data-bd-hidden-column')
   clearAssigneeGroups(root)
   document.documentElement.removeAttribute('data-bd-compact')
   document.documentElement.removeAttribute('data-bd-focus')

@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   otherTeamsMode: 'show',
   titlePatterns: [],
   collapsedColumns: [],
+  hiddenColumns: [],
   compact: false,
   groupByAssignee: false,
   focus: false,
