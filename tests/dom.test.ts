@@ -301,6 +301,15 @@ describe('markAssigneeGroups', () => {
     expect(document.querySelector('.bd-group-header')).toBeNull()
   })
 
+  it('tracks groups per stack in a split column', () => {
+    document.body.innerHTML = `<div id="project-items-region"><div data-board-column="C" data-bd-split><div>C</div><div>
+      <div data-board-card-id="1" data-hovercard-subject-tag="pull_request:1"><div><a href="https://github.com/o/r/pull/1"><h3 id="board-card-title-1">pr</h3></a><figure><figcaption>Assignees: matheus</figcaption></figure></div></div>
+      <div data-board-card-id="2" data-hovercard-subject-tag="issue:2"><div><a href="https://github.com/o/r/issues/2"><h3 id="board-card-title-2">issue</h3></a><figure><figcaption>Assignees: matheus</figcaption></figure></div></div>
+    </div></div></div>`
+    markAssigneeGroups(document, parseBoard(document))
+    expect(groups()).toEqual(['matheus', 'matheus'])
+  })
+
   it('removes the header from a card that turned into a placeholder', () => {
     board([['ann']])
     markAssigneeGroups(document, parseBoard(document))

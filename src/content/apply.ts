@@ -248,16 +248,19 @@ export function assigneeGroup(card: Card): string {
 export function markAssigneeGroups(root: ParentNode, entries: { el: Element; card: Card }[]): void {
   const byEl = new Map(entries.map((e) => [e.el, e.card]))
   for (const column of root.querySelectorAll(SELECTORS.column)) {
-    let previous: string | undefined
+    // A split column shows two stacks, and runs are visual: track them per stack, not in DOM order.
+    const split = column.hasAttribute('data-bd-split')
+    const previous: (string | undefined)[] = [undefined, undefined]
     for (const el of column.querySelectorAll(SELECTORS.card)) {
       const card = byEl.get(el)
       if (!card || el.getAttribute('data-bd-mode') === 'hide') {
         setGroup(el, undefined)
         continue
       }
+      const stack = split && card.type === 'pull_request' ? 1 : 0
       const group = assigneeGroup(card)
-      setGroup(el, group !== previous ? card : undefined)
-      previous = group
+      setGroup(el, group !== previous[stack] ? card : undefined)
+      previous[stack] = group
     }
   }
 }
