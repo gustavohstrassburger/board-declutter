@@ -1,80 +1,48 @@
 # Board Declutter
 
-Chrome extension that makes GitHub Projects boards readable again when most of the cards are noise.
-
-It was built for the PostHog Feature Flags board, where half of the "No Status" column is community issues nobody owns and the "Done" column holds a couple hundred cards that never get archived. It works only with what the board already shows on each card: nothing leaves the browser, no token, no API calls.
-
-## What it does
-
-Every card on a board gets evaluated against a small set of rules. The AI rule needs the view to show the Labels field (View → Fields → Labels); on the PostHog board the AI bot labels its PRs `self-driving`, which no human PR carries. Each rule can **show**, **dim** or **hide** the card, and the strongest outcome wins. The no-assignee rule can also **highlight** the card: it stays visible with an amber marker, so work nobody owns stands out. Cards assigned to you get a blue marker (unless **Highlight cards assigned to you** is off); the rules treat them like any other card.
-
-| Rule                                                                                    | Default |
-| --------------------------------------------------------------------------------------- | ------- |
-| AI-generated cards, recognised by label (`self-driving` by default)                     | dim     |
-| Cards not marked as AI-generated                                                        | show    |
-| Cards with no assignee                                                                  | show    |
-| Cards from other teams (assigned to no team member, or unassigned without a team label) | show    |
-| Titles matching a regex                                                                 | hide    |
-
-On top of that:
-
-- **Modes**: a set of defaults applied when the mode is picked, from the first button of the toolbar (a menu that describes each mode) or the top of the options page. Picking Normal puts back the values the mode replaced; changing a board setting by hand while a mode is on also switches to Normal, but keeps what is on the board, the change included. **Planning** hides other teams' cards and AI cards, highlights cards with no assignee (and drops the marker on yours), turns on the full-screen board and the issue/PR split, hides the Done column and keeps No Status visible. **Bot triage** leaves only AI cards, from every team, highlights the unassigned ones, turns on the full-screen board and the issue/PR split, hides Done and keeps No Status visible.
-- **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number only appears once the column is fully loaded. **Preload cards** (on by default) disables that lazy-loading by fetching every card of each column when the board opens, without scrolling: GitHub loads the next page when a sentinel at the end of the list comes into view, so the extension takes it out of the layout for a moment and puts it back. That also keeps loading going when rules hide so many cards that the column is too short to scroll.
-- **Hidden and collapsed columns**: the Columns section of the toolbar's settings panel lists the board's columns with a checkbox each, so "Done" or "No Status" can be removed in one click; the options page can also fold columns into a thin strip.
-- **Compact mode**: single-line titles, no field chips under them (labels, parent, dates).
-- **Split issues and PRs**: a column such as "No Status" becomes two stacks side by side, issues on the left and pull requests on the right, newest first. GitHub does the ordering (sort by Created) and a CSS grid does the split, so the virtualised list is never reordered. Each stack scrolls on its own: the wheel moves whichever stack the pointer is over.
-- **Group by assignee**: every column ordered by assignee, with avatars and name as a header on the first card of each group. GitHub does the ordering: the extension applies the board's own sort through the URL, so it covers the whole column and not just the cards currently rendered. Click a group's header (it shows the card count) to fold its cards away and again to bring them back; folded groups are remembered per browser.
-- **Full-screen board** (focus mode): hides GitHub's header, the project title bar and the view tabs so the board gets the whole window; the filter bar stays. Push the mouse against the top edge to bring them back.
-- **Floating toolbar**: a small bar with the mode switch and **⚙**, which opens a panel with every setting the board uses at once: each rule's show/dim/hide choices, the layout switches, grouping and the columns. It shows a status only when there is something to say ("Off", or "⚠ labels hidden" when the view keeps the AI rules blind). It can be minimized to the mode switch and a small expand pill. The options page sections fold the same way, below the mode.
-- **AI chip**: cards carrying one of the AI labels show a small purple "AI" chip next to their number, in every mode, so bot work is recognisable even when it is not dimmed.
-- **Reason badge**: dimmed cards show why ("no assignee · not your team") in the bottom-right corner.
+Chrome extension that declutters GitHub Projects boards using only what the board shows: no token, nothing leaves the browser.
 
 ## Install
+
+### From a release
+
+1. Download the zip from the [latest release](https://github.com/gustavohstrassburger/board-declutter/releases/latest).
+2. Unzip it into a folder you will keep (e.g. `~/board-declutter`).
+3. Open `chrome://extensions`, turn on **Developer mode** (top right), click **Load unpacked** and pick that folder.
+4. Open the board. By default the extension only runs on the PostHog Feature Flags view (`/orgs/PostHog/projects/112/views/6`); change that under **Run only on these views** in the options page.
+
+To update, unzip the new release over the same folder and click the reload icon on the extension's card in `chrome://extensions`, then reload the board tab.
+
+### From source
 
 ```sh
 pnpm install
 bin/build
 ```
 
-Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and pick the `dist/` folder. Every merge to `main` also publishes the build as a release (`build-<run number>`, with the zipped extension attached): download the zip from the latest release, unzip it and load that folder instead of building locally. Other CI runs (pull requests) upload the build as an artifact on the run's page. Click the extension icon to open the settings page.
+Then **Load unpacked** the `dist/` folder as above. After pulling changes, run `bin/build` again and reload the extension.
 
-Recommended first setup for a team board:
+## Setup
 
-1. List the project views to run on in **Run only on these views** (by default the PostHog Feature Flags view, `projects/112/views/6`); anywhere else the extension does nothing. Leave it empty to run on every board. Pick views that show the Labels field, which the AI rules and modes rely on.
-1. Put your GitHub login in **Your GitHub login**.
-1. List your team members and team labels (e.g. `team/feature-flags`).
-1. Set **Cards from other teams** and **Cards with no assignee** to `dim` or `hide`, and collapse `Done`.
+Open the options page (extension icon, or **⚙ → Options page** on the board) and fill in your GitHub login, team members and team labels. The AI rules read card labels, so the view must show the Labels field (View → Fields → Labels).
 
-`bin/build --zip` produces a zip for sharing or uploading to the Chrome Web Store.
+## Features
+
+- **Modes**: Normal, Planning (your team's human work) and Bot triage (AI cards only). Changing a setting by hand switches back to Normal.
+- **Rules**: AI, not AI, unassigned and other teams' cards can each be shown, dimmed or hidden; unassigned cards can also be highlighted. The strongest rule wins.
+- **Layout**: compact cards, full-screen board, issues and PRs split side by side, a marker on your cards, cards preloaded instead of lazy-loaded, and grouping by assignee with collapsible groups.
+- **Columns**: hide or collapse any column.
+- **AI chip** next to the number of AI-generated cards.
+
+Everything is on the floating toolbar (**Mode** and **⚙**) at the bottom right of the board.
 
 ## Development
 
 ```sh
-pnpm run watch   # rebuild dist/ on change; reload the extension in chrome://extensions
-bin/test         # vitest
-bin/lint         # eslint, prettier --check, tsc
-bin/fmt          # prettier + eslint --fix
+pnpm run watch   # rebuild dist/ on change
+bin/test
+bin/lint
+bin/fmt
 ```
 
-Layout:
-
-- `src/core/` – pure logic: settings and the rule engine. Fully unit tested.
-- `src/content/` – content script: reads cards from the board DOM, applies decisions as `data-bd-*` attributes, injects the floating toolbar and the group headers. Styling lives in `content.css`.
-- `src/background/` – tiny service worker: opens the options page.
-- `src/options/` – settings page.
-- `scripts/` – esbuild bundling and the dependency-free icon generator.
-
-### How the board is read
-
-GitHub Projects renders the board with hashed CSS class names, so the extension relies only on stable data attributes: columns are `[data-board-column]`, cards are `[data-board-card-id]`, the title is `h3[id^=board-card-title-]`, fields like assignees and labels are `<figure>` elements whose `<figcaption>` starts with the field name, and the item link is the card's `<a href>`. Cards are virtualised while scrolling, and while a page of items loads GitHub fills the shells with a skeleton, so a card is only evaluated once its real title is in the DOM. A `MutationObserver` re-applies the rules on every DOM change; applying is idempotent and cheap.
-
-If GitHub changes the board markup, `src/content/dom.ts` is the only file that should need updating, and `tests/dom.test.ts` holds a captured copy of the real markup to test against.
-
-## Ideas not built yet
-
-These need data the card does not show, so they would need the GitHub API (a token) or GitHub's hovercard endpoint:
-
-- Recognise bot PRs by author rather than by label, for bots that do not label their PRs. GitHub's board filter has no `author:` qualifier.
-- Show how long a card has been in its column, to spot stale reviews.
-- Dim draft PRs and cards not updated for a while.
-- Group bot PRs into one collapsible stack per column.
+Rules and settings live in `src/core/`, the content script and toolbar in `src/content/`, and the options page in `src/options/`. Board markup is read only in `src/content/dom.ts`. Every merge to `main` publishes a release with the built extension.
