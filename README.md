@@ -36,7 +36,7 @@ pnpm install
 bin/build
 ```
 
-Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and pick the `dist/` folder. Click the extension icon to open the settings page.
+Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and pick the `dist/` folder. Every CI run also uploads the built extension as an artifact (`board-declutter-<sha>`): download it from the run's page, unzip it and load that folder instead of building locally. Click the extension icon to open the settings page.
 
 Recommended first setup for a team board:
 
