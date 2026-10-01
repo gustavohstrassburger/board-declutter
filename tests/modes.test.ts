@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyChange, switchMode } from '../src/core/modes'
+import { applyChange, BOARD_MODES, MODE_PRESETS, RULE_KEYS, switchMode } from '../src/core/modes'
 import { settings } from './fixtures'
 
 describe('switchMode', () => {
@@ -62,6 +62,21 @@ describe('switchMode', () => {
       split: false,
       hiddenColumns: ['Done'],
     })
+  })
+
+  it('sets every card rule in every mode, so nothing left behind leaks into one', () => {
+    for (const mode of BOARD_MODES.filter((m) => m !== 'normal')) {
+      expect(Object.keys(MODE_PRESETS[mode].settings)).toEqual(
+        expect.arrayContaining([...RULE_KEYS]),
+      )
+    }
+  })
+
+  it('drops a rule My cards set once another mode is picked, even after a change by hand', () => {
+    const tweaked = applyChange(switchMode(settings(), 'myCards'), { compact: true })
+    expect(tweaked).toMatchObject({ mode: 'normal', notMineMode: 'hide' })
+    expect(switchMode(tweaked, 'planning').notMineMode).toBe('show')
+    expect(switchMode(tweaked, 'botTriage').notMineMode).toBe('show')
   })
 
   it('lists Done once when it is already hidden', () => {

@@ -12,6 +12,16 @@ export interface ModePreset {
   shownColumns: string[]
 }
 
+/** The card rules. Every mode but Normal sets all of them, so a value left behind by another mode or by hand
+ *  never changes what a mode shows. */
+export const RULE_KEYS = [
+  'aiMode',
+  'nonAiMode',
+  'unassignedMode',
+  'otherTeamsMode',
+  'notMineMode',
+] as const satisfies readonly (keyof Settings)[]
+
 export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
   normal: {
     label: 'Normal',
@@ -29,9 +39,9 @@ export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
       highlightMine: false,
       otherTeamsMode: 'hide',
       aiMode: 'hide',
-      // Human work is what planning is about, whatever another context left this rule at.
       nonAiMode: 'show',
       unassignedMode: 'highlight',
+      notMineMode: 'show',
       focus: true,
       split: true,
     },
@@ -48,6 +58,7 @@ export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
       nonAiMode: 'hide',
       otherTeamsMode: 'show',
       unassignedMode: 'highlight',
+      notMineMode: 'show',
       focus: true,
       split: true,
     },
@@ -65,6 +76,7 @@ export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
       aiMode: 'show',
       nonAiMode: 'show',
       otherTeamsMode: 'show',
+      unassignedMode: 'show',
       focus: true,
       split: false,
     },
@@ -114,11 +126,7 @@ export function switchMode(settings: Settings, next: BoardMode): Settings {
  *  the board is no longer what the mode set up; profile settings (login, team, labels, views) and On/Off are not
  *  among them. */
 const VIEW_KEYS: (keyof Settings)[] = [
-  'aiMode',
-  'nonAiMode',
-  'unassignedMode',
-  'otherTeamsMode',
-  'notMineMode',
+  ...RULE_KEYS,
   'compact',
   'focus',
   'split',
