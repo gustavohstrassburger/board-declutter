@@ -26,3 +26,32 @@ jobs:
           name: board-declutter-${{ github.sha }}
           path: dist/
           if-no-files-found: error
+
+  # Every merge to main publishes the build it just checked as a release. The manifest version does not change
+  # per merge, so the run number makes each tag unique.
+  release:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: board-declutter-${{ github.sha }}
+          path: dist/
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          version=$(node -p "require('./src/manifest.json').version")
+          tag="build-$RUN_NUMBER"
+          zip_name="board-declutter-$version-build$RUN_NUMBER.zip"
+          (cd dist && zip -qr "../$zip_name" .)
+          gh release create "$tag" "$zip_name" \
+            --target "$GITHUB_SHA" \
+            --title "Build $RUN_NUMBER ($version, ${GITHUB_SHA::7})" \
+            --generate-notes \
+            --latest
