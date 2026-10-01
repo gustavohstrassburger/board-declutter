@@ -1,4 +1,11 @@
-import { MODE_RANK, type Card, type Decision, type Mode, type Settings } from './types'
+import {
+  MODE_RANK,
+  type Card,
+  type Decision,
+  type Mode,
+  type Settings,
+  type UnassignedMode,
+} from './types'
 
 function normalizeLogin(login: string): string {
   return login
@@ -7,12 +14,16 @@ function normalizeLogin(login: string): string {
     .toLowerCase()
 }
 
-/** A card belongs to the team when a team member is assigned to it or it carries a team label. */
+/** Who is assigned says more than a label: a team-labelled card picked up by someone outside the team is
+ *  theirs. So once team members are configured, an assigned card belongs to the team only when a member is
+ *  among its assignees; unassigned cards (or any card, without members configured) go by team label. */
 export function belongsToTeam(card: Card, settings: Settings): boolean {
   const members = new Set(settings.teamMembers.map(normalizeLogin))
+  if (members.size > 0 && card.assignees.length > 0) {
+    return card.assignees.some((a) => members.has(normalizeLogin(a)))
+  }
   const labels = new Set(settings.teamLabels.map((l) => l.toLowerCase()))
-  if (card.labels.some((l) => labels.has(l.toLowerCase()))) return true
-  return card.assignees.some((a) => members.has(normalizeLogin(a)))
+  return card.labels.some((l) => labels.has(l.toLowerCase()))
 }
 
 /** The label that marks the card as AI-generated, if any. */
@@ -52,11 +63,13 @@ function matchesTitlePattern(card: Card, settings: Settings): string | undefined
 
 /** Combine rule outcomes: the strongest mode wins, and every triggered rule is reported. */
 export function evaluate(card: Card, settings: Settings): Decision {
-  const triggered: { mode: Mode; reason: string }[] = []
+  const triggered: { mode: UnassignedMode; reason: string }[] = []
 
   const ai = aiLabel(card, settings)
   if (ai !== undefined) {
     triggered.push({ mode: settings.aiMode, reason: `AI-generated (${ai})` })
+  } else {
+    triggered.push({ mode: settings.nonAiMode, reason: 'not AI-generated' })
   }
   if (card.assignees.length === 0 && card.type !== 'draft') {
     triggered.push({ mode: settings.unassignedMode, reason: 'no assignee' })
@@ -70,17 +83,20 @@ export function evaluate(card: Card, settings: Settings): Decision {
     triggered.push({ mode: 'hide', reason: `title matches /${pattern}/` })
   }
 
-  const active = triggered.filter((t) => t.mode !== 'show')
+  // 'highlight' marks the card without changing whether it is shown, so it does not compete with dim/hide,
+  // and the marker itself says why: it adds no reason badge.
+  const active = triggered.filter(
+    (t): t is { mode: Mode; reason: string } => t.mode !== 'show' && t.mode !== 'highlight',
+  )
   const mode = active.reduce<Mode>(
     (acc, t) => (MODE_RANK[t.mode] > MODE_RANK[acc] ? t.mode : acc),
     'show',
   )
-  const highlight = isMine(card, settings)
-
-  // Cards that are mine are never hidden: the whole point is to find my work fast.
   return {
-    mode: highlight && mode === 'hide' ? 'dim' : mode,
-    highlight,
+    mode,
+    highlight: settings.highlightMine && isMine(card, settings),
+    attention: triggered.some((t) => t.mode === 'highlight'),
+    ai: ai !== undefined,
     reasons: active.map((t) => t.reason),
   }
 }

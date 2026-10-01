@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   applyCollapsedColumns,
   applyColumnStats,
@@ -9,8 +9,9 @@ import {
   chooseColumnStats,
   clearAll,
   clearAssigneeGroups,
+  clearDecision,
+  groupKey,
   collectColumnStats,
-  markAssigneeGroups,
   markGroups,
   resetStaleDecisions,
   setText,
@@ -99,15 +100,57 @@ describe('cardKey', () => {
 describe('apply', () => {
   it('sets and clears card attributes', () => {
     const el = document.querySelector('[data-board-card-id="500"]')!
-    applyDecision(el, { mode: 'hide', highlight: true, reasons: ['bot author', 'draft PR'] }, 3)
+    applyDecision(
+      el,
+      {
+        mode: 'hide',
+        highlight: true,
+        attention: false,
+        ai: false,
+        reasons: ['bot author', 'draft PR'],
+      },
+      3,
+    )
     expect(el.getAttribute('data-bd-mode')).toBe('hide')
     expect(el.hasAttribute('data-bd-highlight')).toBe(true)
     expect(el.getAttribute('data-bd-reasons')).toBe('bot author · draft PR')
     expect(el.getAttribute('data-bd-v')).toBe('3')
 
-    applyDecision(el, { mode: 'show', highlight: false, reasons: [] }, 4)
+    applyDecision(
+      el,
+      { mode: 'show', highlight: false, attention: false, ai: false, reasons: [] },
+      4,
+    )
     expect(el.hasAttribute('data-bd-mode')).toBe(false)
     expect(el.hasAttribute('data-bd-reasons')).toBe(false)
+  })
+
+  it('marks AI-generated cards for their chip', () => {
+    const el = document.querySelector('[data-board-card-id="500"]')!
+    applyDecision(
+      el,
+      { mode: 'show', highlight: false, attention: false, ai: true, reasons: [] },
+      1,
+    )
+    expect(el.hasAttribute('data-bd-ai')).toBe(true)
+    clearDecision(el)
+    expect(el.hasAttribute('data-bd-ai')).toBe(false)
+  })
+
+  it('marks cards that need attention', () => {
+    const el = document.querySelector('[data-board-card-id="500"]')!
+    applyDecision(
+      el,
+      { mode: 'show', highlight: false, attention: true, ai: false, reasons: [] },
+      1,
+    )
+    expect(el.hasAttribute('data-bd-attention')).toBe(true)
+    applyDecision(
+      el,
+      { mode: 'show', highlight: false, attention: false, ai: false, reasons: [] },
+      2,
+    )
+    expect(el.hasAttribute('data-bd-attention')).toBe(false)
   })
 
   it('shows the visible count only while something is hidden, and removes it after', () => {
@@ -184,7 +227,13 @@ describe('apply', () => {
 })
 
 describe('virtualised cards', () => {
-  const hide = { mode: 'hide' as const, highlight: false, reasons: ['no assignee'] }
+  const hide = {
+    mode: 'hide' as const,
+    highlight: false,
+    attention: false,
+    ai: false,
+    reasons: ['no assignee'],
+  }
 
   it('counts placeholders from their attributes so hidden cards stay in the stats', () => {
     const column = document.querySelector('[data-board-column="Todo"]')!
@@ -244,7 +293,7 @@ describe('parseCard link safety', () => {
   })
 })
 
-describe('markAssigneeGroups', () => {
+describe('markGroups', () => {
   function board(assignees: (string[] | null)[]): void {
     document.body.innerHTML = `<div id="project-items-region"><div data-board-column="C"><div>C</div><div>${assignees
       .map((a, i) =>
@@ -271,7 +320,7 @@ describe('markAssigneeGroups', () => {
     [...document.querySelectorAll('[data-board-card-id]')].map((el) => {
       const h = el.querySelector(':scope > .bd-group-header')
       return h
-        ? `${h.querySelectorAll('img').length}:${h.querySelector('span')?.textContent}`
+        ? `${h.querySelectorAll('img').length}:${h.querySelector('.bd-group-header__name')?.textContent}`
         : null
     })
 
@@ -279,8 +328,12 @@ describe('markAssigneeGroups', () => {
     board([['ann'], ['ann'], null, ['bob'], [], [], ['ann']])
     const entries = parseBoard(document)
     const hidden = document.querySelector('[data-board-card-id="3"]')!
-    applyDecision(hidden, { mode: 'hide', highlight: false, reasons: [] }, 1)
-    markAssigneeGroups(document, entries)
+    applyDecision(
+      hidden,
+      { mode: 'hide', highlight: false, attention: false, ai: false, reasons: [] },
+      1,
+    )
+    markGroups(document, entries)
     expect(groups()).toEqual(['ann', null, null, null, 'Unassigned', null, 'ann'])
     expect(headers()).toEqual(['1:ann', null, null, null, '0:Unassigned', null, '1:ann'])
   })
@@ -290,7 +343,7 @@ describe('markAssigneeGroups', () => {
       ['ann', 'bob'],
       ['ann', 'bob'],
     ])
-    markAssigneeGroups(document, parseBoard(document))
+    markGroups(document, parseBoard(document))
     expect(headers()).toEqual(['2:ann, bob', null])
     const card = document.querySelector('[data-board-card-id="0"]')!
     expect(card.firstElementChild?.className).toBe('bd-group-header')
@@ -307,16 +360,49 @@ describe('markAssigneeGroups', () => {
       <div data-board-card-id="1" data-hovercard-subject-tag="pull_request:1"><div><a href="https://github.com/o/r/pull/1"><h3 id="board-card-title-1">pr</h3></a><figure><figcaption>Assignees: matheus</figcaption></figure></div></div>
       <div data-board-card-id="2" data-hovercard-subject-tag="issue:2"><div><a href="https://github.com/o/r/issues/2"><h3 id="board-card-title-2">issue</h3></a><figure><figcaption>Assignees: matheus</figcaption></figure></div></div>
     </div></div></div>`
-    markAssigneeGroups(document, parseBoard(document))
+    markGroups(document, parseBoard(document))
     expect(groups()).toEqual(['matheus', 'matheus'])
+  })
+
+  it('folds a collapsed group under its header and counts its cards', () => {
+    board([['ann'], ['ann'], ['bob']])
+    const ann = groupKey('C', 0, 'ann')
+    const onToggle = vi.fn()
+    markGroups(document, parseBoard(document), { collapsed: new Set([ann]), onToggle })
+    const folded = [...document.querySelectorAll('[data-board-card-id]')].map((el) =>
+      el.getAttribute('data-bd-group-collapsed'),
+    )
+    expect(folded).toEqual(['head', 'rest', null])
+    const header = document.querySelector<HTMLElement>('.bd-group-header')!
+    expect(header.querySelector('.bd-group-header__count')!.textContent).toBe('2')
+    expect(header.getAttribute('aria-expanded')).toBe('false')
+    header.click()
+    expect(onToggle).toHaveBeenCalledWith(ann)
+  })
+
+  it('releases folded placeholders once their group is expanded', () => {
+    board([['ann'], ['ann']])
+    const ann = groupKey('C', 0, 'ann')
+    markGroups(document, parseBoard(document), {
+      collapsed: new Set([ann]),
+      onToggle: () => {},
+    })
+    const rest = document.querySelector('[data-board-card-id="1"]')!
+    rest.replaceChildren() // hidden, so GitHub turned it into a placeholder
+    const stillFolded = { collapsed: new Set([ann]), onToggle: () => {} }
+    markGroups(document, parseBoard(document), stillFolded)
+    expect(rest.getAttribute('data-bd-group-collapsed')).toBe('rest')
+
+    markGroups(document, parseBoard(document))
+    expect(rest.hasAttribute('data-bd-group-collapsed')).toBe(false)
   })
 
   it('removes the header from a card that turned into a placeholder', () => {
     board([['ann']])
-    markAssigneeGroups(document, parseBoard(document))
+    markGroups(document, parseBoard(document))
     const card = document.querySelector('[data-board-card-id="0"]')!
     card.lastElementChild!.remove() // GitHub un-rendered it; only our header is left
-    markAssigneeGroups(document, [])
+    markGroups(document, [])
     expect(card.children).toHaveLength(0)
   })
 })
@@ -337,38 +423,5 @@ describe('clampOffset', () => {
     expect(clampOffset(500, 1000, 300)).toBe(500)
     expect(clampOffset(900, 1000, 300)).toBe(700)
     expect(clampOffset(50, 200, 300)).toBe(0)
-  })
-})
-
-describe('parent issue', () => {
-  const CARD = `<div data-board-column="C"><div>C</div><div>
-    <div data-board-card-id="1" data-hovercard-subject-tag="issue:1"><div>
-      <a href="https://github.com/o/r/issues/1"><h3 id="board-card-title-1">child</h3></a>
-      <ul aria-label="Fields"><li><div><button aria-label="Parent issue: Cut over realtime cohorts" data-hovercard-url="https://github.com/o/r/issues/88017/hovercard"></button></div></li></ul>
-    </div></div>
-    <div data-board-card-id="2" data-hovercard-subject-tag="issue:2"><div>
-      <a href="https://github.com/o/r/issues/2"><h3 id="board-card-title-2">orphan</h3></a>
-    </div></div>
-  </div></div>`
-
-  it('parses the parent token and tags it for compact mode', () => {
-    document.body.innerHTML = CARD
-    expect(parseCard(document.querySelector('[data-board-card-id="1"]')!)?.parent).toEqual({
-      title: 'Cut over realtime cohorts',
-      url: 'https://github.com/o/r/issues/88017',
-      number: 88017,
-    })
-    expect(parseCard(document.querySelector('[data-board-card-id="2"]')!)?.parent).toBeUndefined()
-    expect(document.querySelectorAll('li[data-bd-field="parent"]')).toHaveLength(1)
-  })
-
-  it('groups by parent with number and title, and "No parent" otherwise', () => {
-    document.body.innerHTML = CARD
-    markGroups(document, parseBoard(document), 'parent')
-    const groups = [...document.querySelectorAll('[data-board-card-id]')].map((el) =>
-      el.getAttribute('data-bd-group'),
-    )
-    expect(groups).toEqual(['#88017 Cut over realtime cohorts', 'No parent'])
-    expect(document.querySelector('.bd-group-header img')).toBeNull()
   })
 })

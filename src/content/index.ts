@@ -1,3 +1,4 @@
+import { applyChange } from '../core/modes'
 import { evaluate } from '../core/rules'
 import { loadSettings, onSettingsChange, saveSettings } from '../core/settings'
 import type { Settings } from '../core/types'
@@ -18,9 +19,9 @@ import {
 import { parseBoard, SELECTORS } from './dom'
 import { installPeek } from './focus'
 import { ColumnPreloader } from './preload'
-import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT, PARENT_SORT } from './sort'
+import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT } from './sort'
 import { Toolbar } from './toolbar'
-import { viewShowsLabels, viewShowsParent } from './view'
+import { isAllowedView, viewShowsLabels } from './view'
 
 let settings: Settings
 /** Bumped whenever settings change; see `applyDecision` for why decisions are stamped with it. */
@@ -28,6 +29,30 @@ let version = 0
 let toolbar: Toolbar | undefined
 let scheduled = false
 const preloader = new ColumnPreloader(() => schedule())
+
+const COLLAPSED_GROUPS_KEY = 'bd-collapsed-groups'
+
+/** Folded groups are a per-browser view convenience, like the toolbar's minimized state, so they live in
+ *  localStorage, which may be unavailable (private mode). */
+function loadCollapsedGroups(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(COLLAPSED_GROUPS_KEY) ?? '[]') as string[])
+  } catch {
+    return new Set()
+  }
+}
+
+const collapsedGroups = loadCollapsedGroups()
+
+function toggleGroup(key: string): void {
+  if (!collapsedGroups.delete(key)) collapsedGroups.add(key)
+  try {
+    localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...collapsedGroups]))
+  } catch {
+    // ignore
+  }
+  schedule()
+}
 
 function schedule(): void {
   if (scheduled) return
@@ -42,6 +67,15 @@ function apply(): void {
   const board = document.querySelector(SELECTORS.board)
   if (!board) {
     toolbarVisible(false)
+    // GitHub navigates without a reload: leaving a full-screen board must bring the page's header back.
+    document.documentElement.removeAttribute('data-bd-focus')
+    document.documentElement.removeAttribute('data-bd-compact')
+    return
+  }
+  // GitHub switches views without a reload, so a board left for another view must be restored.
+  if (!isAllowedView(location.pathname, settings.views)) {
+    clearAll(board)
+    toolbarVisible(false)
     return
   }
   toolbarVisible(true)
@@ -49,12 +83,8 @@ function apply(): void {
   if (!settings.enabled) {
     clearAll(board)
     toolbar?.update({
-      total: 0,
-      hidden: 0,
-      dimmed: 0,
       columns: columnNames(board),
       labelsVisible: true,
-      parentVisible: true,
     })
     return
   }
@@ -62,13 +92,7 @@ function apply(): void {
   resetStaleDecisions(board, version)
   // Both features lean on GitHub's own sort; grouping by assignee takes precedence when both are on.
   const sort =
-    settings.groupBy === 'assignee'
-      ? ASSIGNEE_SORT
-      : settings.groupBy === 'parent'
-        ? PARENT_SORT
-        : settings.split
-          ? NEWEST_SORT
-          : undefined
+    settings.groupBy === 'assignee' ? ASSIGNEE_SORT : settings.split ? NEWEST_SORT : undefined
   if (sort && ensureSort(board, sort)) return
 
   const entries = parseBoard(board)
@@ -76,32 +100,28 @@ function apply(): void {
     applyDecision(el, evaluate(card, settings), version)
   }
 
-  let total = 0
-  let hidden = 0
-  let dimmed = 0
   for (const column of board.querySelectorAll(SELECTORS.column)) {
-    const dom = collectColumnStats(column)
-    applyColumnStats(column, chooseColumnStats(dom, githubColumnCount(column)))
-    total += dom.total
-    hidden += dom.hidden
-    dimmed += dom.dimmed
+    applyColumnStats(
+      column,
+      chooseColumnStats(collectColumnStats(column), githubColumnCount(column)),
+    )
   }
   applyCollapsedColumns(board, settings.collapsedColumns)
   applyHiddenColumns(board, settings.hiddenColumns)
   applySplitColumns(board, settings.split ? settings.splitColumns : [], schedule)
   if (settings.preloadColumns) preloader.run(board)
-  if (settings.groupBy !== 'none') markGroups(board, entries, settings.groupBy)
-  else clearAssigneeGroups(board)
+  if (settings.groupBy !== 'none') {
+    markGroups(board, entries, {
+      collapsed: collapsedGroups,
+      onToggle: toggleGroup,
+    })
+  } else clearAssigneeGroups(board)
   document.documentElement.toggleAttribute('data-bd-compact', settings.compact)
   document.documentElement.toggleAttribute('data-bd-focus', settings.focus)
 
   toolbar?.update({
-    total,
-    hidden,
-    dimmed,
     columns: columnNames(board),
     labelsVisible: entries.length === 0 || viewShowsLabels(document, location.pathname),
-    parentVisible: entries.length === 0 || viewShowsParent(document, location.pathname),
   })
 }
 
@@ -116,6 +136,15 @@ function toolbarVisible(visible: boolean): void {
 }
 
 function updateSettings(next: Settings): void {
+  // A card's group key includes its stack, which splitting changes; folded placeholders keep the old key and
+  // no header would carry it any more, so drop the grouping marks and let the next pass redo them.
+  if (
+    next.split !== settings.split ||
+    next.splitColumns.join('\n') !== settings.splitColumns.join('\n')
+  ) {
+    const board = document.querySelector(SELECTORS.board)
+    if (board) clearAssigneeGroups(board)
+  }
   settings = next
   version++
   toolbar?.setSettings(settings)
@@ -131,7 +160,11 @@ function isOwnMutation(record: MutationRecord): boolean {
 async function main(): Promise<void> {
   settings = await loadSettings()
   // Toolbar clicks only persist; the storage change event then drives the update, so each change is applied once.
-  toolbar = new Toolbar(settings, (patch) => saveSettings({ ...settings, ...patch }))
+  toolbar = new Toolbar(settings, (patch) =>
+    saveSettings(applyChange(settings, patch)).catch((err: unknown) =>
+      console.error('Board Declutter: could not save settings', err),
+    ),
+  )
   onSettingsChange(updateSettings)
   installPeek(
     document.documentElement,

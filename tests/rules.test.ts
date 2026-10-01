@@ -13,6 +13,12 @@ describe('belongsToTeam', () => {
     expect(belongsToTeam(card({ assignees: ['app/haacked[bot]'] }), team)).toBe(true)
   })
 
+  it('goes by assignee over label once members are configured', () => {
+    const c = card({ assignees: ['andehen'], labels: ['team/feature-flags'] })
+    expect(belongsToTeam(c, team)).toBe(false)
+    expect(belongsToTeam(c, settings({ teamLabels: ['team/feature-flags'] }))).toBe(true)
+  })
+
   it('is false for an unrelated card', () => {
     expect(belongsToTeam(card({ assignees: ['stranger'], labels: ['bug'] }), team)).toBe(false)
   })
@@ -30,6 +36,8 @@ describe('evaluate', () => {
     expect(evaluate(card({ assignees: ['x'] }), settings())).toEqual({
       mode: 'show',
       highlight: false,
+      attention: false,
+      ai: false,
       reasons: [],
     })
   })
@@ -43,11 +51,33 @@ describe('evaluate', () => {
 
   it('dims AI-generated cards by default and reports the label', () => {
     const d = evaluate(card({ assignees: ['x'], labels: ['self-driving'] }), settings())
-    expect(d).toMatchObject({ mode: 'dim', reasons: ['AI-generated (self-driving)'] })
+    expect(d).toMatchObject({ mode: 'dim', ai: true, reasons: ['AI-generated (self-driving)'] })
     expect(
       evaluate(card({ assignees: ['x'], labels: ['self-driving'] }), settings({ aiMode: 'hide' }))
         .mode,
     ).toBe('hide')
+  })
+
+  it('highlights unassigned cards without changing their visibility', () => {
+    const s = settings({ unassignedMode: 'highlight', aiMode: 'dim' })
+    expect(evaluate(card(), s)).toMatchObject({
+      mode: 'show',
+      attention: true,
+      reasons: [],
+    })
+    expect(evaluate(card({ labels: ['self-driving'] }), s)).toMatchObject({
+      mode: 'dim',
+      attention: true,
+    })
+  })
+
+  it('can hide every card not marked as AI-generated', () => {
+    const s = settings({ nonAiMode: 'hide' })
+    expect(evaluate(card({ assignees: ['x'] }), s)).toMatchObject({
+      mode: 'hide',
+      reasons: ['not AI-generated'],
+    })
+    expect(evaluate(card({ assignees: ['x'], labels: ['self-driving'] }), s).mode).toBe('dim')
   })
 
   it('does not treat draft items as unassigned', () => {
@@ -69,9 +99,14 @@ describe('evaluate', () => {
     expect(evaluate(c, settings({ titlePatterns: ['[', '^trunk-merge/'] })).mode).toBe('hide')
   })
 
-  it('never hides my own cards, only dims them', () => {
+  it('hides my own cards like any other, keeping the marker', () => {
     const c = card({ assignees: ['me'], title: 'trunk-merge/pr-1' })
     const d = evaluate(c, settings({ me: 'me', titlePatterns: ['^trunk-merge/'] }))
-    expect(d).toMatchObject({ mode: 'dim', highlight: true })
+    expect(d).toMatchObject({ mode: 'hide', highlight: true })
+  })
+
+  it('can leave my own cards unmarked', () => {
+    const c = card({ assignees: ['me'] })
+    expect(evaluate(c, settings({ me: 'me', highlightMine: false })).highlight).toBe(false)
   })
 })

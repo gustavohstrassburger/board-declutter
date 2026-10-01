@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ASSIGNEE_SORT, NEWEST_SORT, PARENT_SORT, withSort } from '../src/content/sort'
+import { ASSIGNEE_SORT, NEWEST_SORT, withSort } from '../src/content/sort'
 
 const board = 'https://github.com/orgs/PostHog/projects/112/views/2'
 
@@ -26,8 +26,10 @@ describe('withSort', () => {
     expect(withSort(`${board}?sortedBy%5BcolumnId%5D=Title`, NEWEST_SORT)).toBeUndefined()
   })
 
-  it('sorts by the parent issue field', () => {
-    expect(withSort(board, PARENT_SORT)).toContain('sortedBy%5BcolumnId%5D=Parent+issue')
+  it('replaces the parent issue sort earlier builds applied', () => {
+    expect(withSort(`${board}?sortedBy%5BcolumnId%5D=Parent+issue`, ASSIGNEE_SORT)).toContain(
+      'sortedBy%5BcolumnId%5D=Assignees',
+    )
   })
 
   it('ignores pages that are not project views', () => {

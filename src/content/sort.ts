@@ -9,11 +9,11 @@ export interface Sort {
 }
 
 export const ASSIGNEE_SORT: Sort = { columnId: 'Assignees', direction: 'asc' }
-export const PARENT_SORT: Sort = { columnId: 'Parent issue', direction: 'asc' }
 export const NEWEST_SORT: Sort = { columnId: 'Created', direction: 'desc' }
 
-/** Sorts the extension applies itself. One of these in the URL may be replaced; any other sort is the user's. */
-const OWN_SORTS = new Set([ASSIGNEE_SORT.columnId, PARENT_SORT.columnId, NEWEST_SORT.columnId])
+/** Sorts the extension applies itself. One of these in the URL may be replaced; any other sort is the user's.
+ *  "Parent issue" was applied by earlier builds that grouped by parent. */
+const OWN_SORTS = new Set([ASSIGNEE_SORT.columnId, 'Parent issue', NEWEST_SORT.columnId])
 
 /** The board URL with GitHub's own sort applied, or undefined when nothing needs to change: not a project view,
  *  the sort is already there, or the user picked a sort of their own. */

@@ -1,3 +1,20 @@
+/** GitHub paths are case-insensitive (`/orgs/posthog` is `/orgs/PostHog`), so they compare lowercased. */
+function viewPath(view: string): string | undefined {
+  try {
+    return new URL(view.trim(), 'https://github.com').pathname.replace(/\/+$/, '').toLowerCase()
+  } catch {
+    return undefined
+  }
+}
+
+/** Whether the extension runs on this page: its path matches one of `views` (query strings such as the sort
+ *  are ignored), or `views` is empty. */
+export function isAllowedView(pathname: string, views: string[]): boolean {
+  if (views.length === 0) return true
+  const current = pathname.replace(/\/+$/, '').toLowerCase()
+  return views.some((view) => viewPath(view) === current)
+}
+
 /** Whether the board can show a field at all: either a rendered card has the field's token, or the saved view
  *  lists the field among its visible fields (read from the JSON GitHub embeds in the page). */
 export function viewShowsField(
@@ -27,8 +44,4 @@ export function viewShowsField(
 
 export function viewShowsLabels(doc: Document, pathname: string): boolean {
   return viewShowsField(doc, pathname, 'labels', 'button[aria-label^="Label: "]')
-}
-
-export function viewShowsParent(doc: Document, pathname: string): boolean {
-  return viewShowsField(doc, pathname, 'parentIssue', 'button[aria-label^="Parent issue: "]')
 }

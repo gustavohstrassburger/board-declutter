@@ -1,9 +1,15 @@
+import { MODE_PRESETS, switchMode } from './modes'
 import type { Settings } from './types'
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
+  // The PostHog Feature Flags board view that shows the Labels field, which the AI rules and modes rely on.
+  views: ['https://github.com/orgs/PostHog/projects/112/views/6'],
+  mode: 'normal',
+  modeSnapshot: {},
   aiLabels: ['self-driving'],
   aiMode: 'dim',
+  nonAiMode: 'show',
   unassignedMode: 'show',
   teamMembers: [],
   teamLabels: [],
@@ -18,6 +24,7 @@ export const DEFAULT_SETTINGS: Settings = {
   splitColumns: ['No Status'],
   preloadColumns: true,
   me: '',
+  highlightMine: true,
 }
 
 const STORAGE_KEY = 'settings'
@@ -28,6 +35,10 @@ export function mergeSettings(stored: Partial<Settings> | undefined): Settings {
   const merged = { ...DEFAULT_SETTINGS, ...(stored ?? {}) }
   // Earlier builds had a boolean for grouping by assignee.
   if (legacy?.groupByAssignee && !legacy.groupBy) merged.groupBy = 'assignee'
+  // Grouping by parent issue was removed: it relied on a sort and a field token GitHub did not reliably give.
+  if ((merged.groupBy as string) === 'parent') merged.groupBy = 'none'
+  // A mode removed in a later build is left, which puts back the values it replaced.
+  if (!Object.hasOwn(MODE_PRESETS, merged.mode)) return switchMode(merged, 'normal')
   return merged
 }
 

@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS } from '../src/core/settings'
 
 /** The options script reads a form field for every setting except the toolbar-only ones.
  *  A missing field throws while filling the form and while saving it, so the HTML must stay in sync. */
-const TOOLBAR_ONLY = new Set(['enabled', 'hiddenColumns'])
+const TOOLBAR_ONLY = new Set(['enabled', 'hiddenColumns', 'modeSnapshot'])
 
 describe('options.html', () => {
   it('has a form field for every setting', () => {

@@ -1,5 +1,5 @@
-import type { Card, Decision, GroupBy } from '../core/types'
-import { isRendered, SELECTORS } from './dom'
+import type { Card, Decision } from '../core/types'
+import { isRendered, loadMoreSentinels, SELECTORS, STACK_LOADER_CLASS } from './dom'
 
 /** Decisions are stamped with the settings version they were made under.
  *  GitHub's virtualiser turns a hidden (display: none) card into an empty placeholder, which we can no longer
@@ -11,6 +11,12 @@ export function applyDecision(el: Element, decision: Decision, version: number):
   if (decision.highlight) el.setAttribute('data-bd-highlight', '')
   else el.removeAttribute('data-bd-highlight')
 
+  if (decision.attention) el.setAttribute('data-bd-attention', '')
+  else el.removeAttribute('data-bd-attention')
+
+  if (decision.ai) el.setAttribute('data-bd-ai', '')
+  else el.removeAttribute('data-bd-ai')
+
   if (decision.reasons.length) el.setAttribute('data-bd-reasons', decision.reasons.join(' · '))
   else el.removeAttribute('data-bd-reasons')
 
@@ -20,6 +26,8 @@ export function applyDecision(el: Element, decision: Decision, version: number):
 export function clearDecision(el: Element): void {
   el.removeAttribute('data-bd-mode')
   el.removeAttribute('data-bd-highlight')
+  el.removeAttribute('data-bd-attention')
+  el.removeAttribute('data-bd-ai')
   el.removeAttribute('data-bd-reasons')
   el.removeAttribute('data-bd-v')
 }
@@ -125,6 +133,7 @@ export function applySplitColumns(root: ParentNode, split: string[], onResize: (
     const existing = column.querySelector(':scope > .bd-split-header')
     if (!column.hasAttribute('data-bd-split')) {
       existing?.remove()
+      for (const loader of column.querySelectorAll(`.${STACK_LOADER_CLASS}`)) loader.remove()
       for (const card of column.querySelectorAll<HTMLElement>(
         '[data-board-card-id][data-bd-shifted]',
       )) {
@@ -212,6 +221,55 @@ function compactStacks(column: Element, onResize: () => void): void {
     tops[stack]! += height + parseFloat(getComputedStyle(el).marginBottom || '0')
   }
   state.heights = [tops[0]!, tops[1]!]
+  const loading =
+    stillLoading(column, zone) && loadMoreSentinels(zone).some((el) => el.scrollHeight > 0)
+  placeStackLoaders(
+    zone,
+    loading ? [0, 1].map((s) => (base ?? 0) + tops[s]! - state.offsets[s]!) : undefined,
+  )
+}
+
+/** The column has cards left to fetch: fewer shells than GitHub's counter. GitHub's own skeleton element keeps
+ *  content even when it is not fetching, so it cannot tell on its own. */
+function stillLoading(column: Element, zone: Element): boolean {
+  const counter = githubColumnCount(column)
+  return counter !== undefined && zone.querySelectorAll(SELECTORS.card).length < counter
+}
+
+/** GitHub shows one loading skeleton at the end of the list, which a split column would draw across both
+ *  stacks; its own element is collapsed (see content.css). While cards are left to load, draw one skeleton at
+ *  the end of each stack instead (`ends`, undefined when done), on the same grid tracks as the cards. */
+function placeStackLoaders(zone: HTMLElement, ends: number[] | undefined): void {
+  const loaders = [...zone.querySelectorAll<HTMLElement>(`:scope > .${STACK_LOADER_CLASS}`)]
+  if (!ends) {
+    for (const loader of loaders) loader.remove()
+    return
+  }
+  // Absolute boxes are placed from the padding edge, while the grid tracks sit inside the padding.
+  const style = getComputedStyle(zone)
+  const padLeft = parseFloat(style.paddingLeft) || 0
+  const padRight = parseFloat(style.paddingRight) || 0
+  const gap = parseFloat(style.columnGap) || 0
+  const track = Math.max(0, (zone.clientWidth - padLeft - padRight - gap) / 2)
+  ends.forEach((top, stack) => {
+    let loader = loaders.find((l) => l.dataset.stack === String(stack))
+    if (!loader) {
+      loader = document.createElement('div')
+      loader.className = STACK_LOADER_CLASS
+      loader.dataset.stack = String(stack)
+      loader.setAttribute('aria-hidden', 'true')
+      for (let i = 0; i < 3; i++) loader.appendChild(document.createElement('span'))
+      zone.appendChild(loader)
+    }
+    const position = {
+      top: `${top}px`,
+      left: `${padLeft + stack * (track + gap)}px`,
+      width: `${track}px`,
+    }
+    for (const [prop, value] of Object.entries(position)) {
+      if (loader.style.getPropertyValue(prop) !== value) loader.style.setProperty(prop, value)
+    }
+  })
 }
 
 /** Each stack scrolls on its own: the wheel moves whichever half of the list the pointer is over. The list
@@ -231,7 +289,10 @@ function installStackScroll(zone: HTMLElement, name: string, relayout: () => voi
       const footer = Math.max(
         0,
         ...[...zone.children]
-          .filter((c) => !c.hasAttribute('data-board-card-id'))
+          .filter(
+            (c) =>
+              !c.hasAttribute('data-board-card-id') && !c.classList.contains(STACK_LOADER_CLASS),
+          )
           .map((c) => (c as HTMLElement).offsetHeight),
       )
       const next = clampOffset(
@@ -253,90 +314,151 @@ export function resetStackScroll(): void {
 }
 
 export const UNASSIGNED_GROUP = 'Unassigned'
-export const NO_PARENT_GROUP = 'No parent'
 
 export function assigneeGroup(card: Card): string {
   return card.assignees.length ? card.assignees.join(', ') : UNASSIGNED_GROUP
 }
 
-export function parentGroup(card: Card): string {
-  if (!card.parent) return NO_PARENT_GROUP
-  return card.parent.number ? `#${card.parent.number} ${card.parent.title}` : card.parent.title
+/** Identifies one group in one stack of one column, so collapsing it does not touch the same name elsewhere. */
+export function groupKey(column: string, stack: number, group: string): string {
+  return [column, stack, group].join('\u0000')
 }
 
-export function groupOf(card: Card, by: GroupBy): string {
-  return by === 'parent' ? parentGroup(card) : assigneeGroup(card)
+export interface GroupCollapse {
+  /** Keys (see `groupKey`) of the groups whose cards are folded under their header. */
+  collapsed: ReadonlySet<string>
+  onToggle: (key: string) => void
 }
 
-/** Title the first visible card of every run of equal groups inside each column.
- *  GitHub does the actual ordering (see `sort.ts`); placeholders are skipped and re-evaluated once rendered. */
+const NO_COLLAPSE: GroupCollapse = { collapsed: new Set(), onToggle: () => {} }
+
+/** Title the first visible card of every run of equal assignees inside each column, and fold collapsed groups:
+ *  the first card keeps only its header, the rest are hidden. GitHub does the actual ordering (see `sort.ts`).
+ *  Hidden cards turn into placeholders we cannot parse, so each card carries its group key in
+ *  `data-bd-group-key`; a placeholder stays folded until its group is expanded. */
 export function markGroups(
   root: ParentNode,
   entries: { el: Element; card: Card }[],
-  by: GroupBy,
+  collapse: GroupCollapse = NO_COLLAPSE,
 ): void {
   const byEl = new Map(entries.map((e) => [e.el, e.card]))
   for (const column of root.querySelectorAll(SELECTORS.column)) {
+    const name = column.getAttribute('data-board-column') ?? ''
     // A split column shows two stacks, and runs are visual: track them per stack, not in DOM order.
     const split = column.hasAttribute('data-bd-split')
-    const previous: (string | undefined)[] = [undefined, undefined]
-    for (const el of column.querySelectorAll(SELECTORS.card)) {
+    const cards = [...column.querySelectorAll(SELECTORS.card)]
+    const keys = new Map<Element, string>()
+    const counts = new Map<string, number>()
+    for (const el of cards) {
       const card = byEl.get(el)
-      if (!card || el.getAttribute('data-bd-mode') === 'hide') {
-        setGroup(el, undefined, by)
+      const key = card
+        ? groupKey(name, split && card.type === 'pull_request' ? 1 : 0, assigneeGroup(card))
+        : el.getAttribute('data-bd-group-key')
+      if (!key || el.getAttribute('data-bd-mode') === 'hide') continue
+      keys.set(el, key)
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+
+    const previous: (string | undefined)[] = [undefined, undefined]
+    for (const el of cards) {
+      const card = byEl.get(el)
+      const key = keys.get(el)
+      if (!card || !key) {
+        setGroup(el, undefined, collapse)
+        // A folded placeholder is released once its group is expanded, so it renders and is parsed again.
+        if (!key || !collapse.collapsed.has(key)) setFolded(el, undefined)
         continue
       }
+      el.setAttribute('data-bd-group-key', key)
       const stack = split && card.type === 'pull_request' ? 1 : 0
-      const group = groupOf(card, by)
-      setGroup(el, group !== previous[stack] ? card : undefined, by)
-      previous[stack] = group
+      const first = key !== previous[stack]
+      previous[stack] = key
+      setGroup(el, first ? { card, key, count: counts.get(key) ?? 1 } : undefined, collapse)
+      setFolded(el, collapse.collapsed.has(key) ? (first ? 'head' : 'rest') : undefined)
     }
   }
 }
 
-/** Kept for callers and tests that group by assignee. */
-export function markAssigneeGroups(root: ParentNode, entries: { el: Element; card: Card }[]): void {
-  markGroups(root, entries, 'assignee')
+function setFolded(el: Element, folded: 'head' | 'rest' | undefined): void {
+  if (folded === undefined) el.removeAttribute('data-bd-group-collapsed')
+  else if (el.getAttribute('data-bd-group-collapsed') !== folded)
+    el.setAttribute('data-bd-group-collapsed', folded)
 }
 
-/** A small header inserted as the card's first child: avatars and name for assignees, number and title for a
- *  parent issue. React only ever touches its own inner box, so a sibling in front of it survives re-renders. */
-function setGroup(el: Element, card: Card | undefined, by: GroupBy): void {
+/** A small header inserted as the card's first child: a chevron, the assignees' avatars and names, and the
+ *  group's card count. Clicking it folds the group. React only ever touches its own inner box, so a sibling in
+ *  front of it survives re-renders. */
+function setGroup(
+  el: Element,
+  run: { card: Card; key: string; count: number } | undefined,
+  collapse: GroupCollapse,
+): void {
   let header = el.querySelector<HTMLElement>(':scope > .bd-group-header')
-  if (!card) {
+  if (!run) {
     el.removeAttribute('data-bd-group')
     header?.remove()
     return
   }
-  const group = groupOf(card, by)
-  if (el.getAttribute('data-bd-group') === group && header) return
+  const { card, key, count } = run
+  const group = assigneeGroup(card)
+  const folded = collapse.collapsed.has(key)
+  const state = `${key}\u0000${count}\u0000${folded}`
+  if (header?.dataset.state === state) return
   el.setAttribute('data-bd-group', group)
   if (!header) {
     header = document.createElement('div')
     header.className = 'bd-group-header'
+    header.setAttribute('role', 'button')
+    header.tabIndex = 0
+    // The card under the header opens GitHub's side panel on click and starts a drag on pointer down.
+    for (const type of ['pointerdown', 'mousedown']) {
+      header.addEventListener(type, (event) => event.stopPropagation())
+    }
+    const toggle = (event: Event): void => {
+      event.stopPropagation()
+      event.preventDefault()
+      const current = header!.dataset.key
+      if (current) collapse.onToggle(current)
+    }
+    header.addEventListener('click', toggle)
+    header.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') toggle(event)
+    })
     el.prepend(header)
   }
+  header.dataset.state = state
+  header.dataset.key = key
+  header.setAttribute('aria-expanded', String(!folded))
+  header.title = folded ? 'Expand group' : 'Collapse group'
   header.replaceChildren()
-  if (by === 'assignee') {
-    for (const login of card.assignees) {
-      const src = card.avatars?.[login]
-      if (!src) continue
-      const img = document.createElement('img')
-      img.src = src
-      img.alt = ''
-      img.width = 16
-      img.height = 16
-      header.appendChild(img)
-    }
+  const chevron = document.createElement('i')
+  chevron.className = 'bd-group-header__chevron'
+  chevron.textContent = folded ? '▸' : '▾'
+  header.appendChild(chevron)
+  for (const login of card.assignees) {
+    const src = card.avatars?.[login]
+    if (!src) continue
+    const img = document.createElement('img')
+    img.src = src
+    img.alt = ''
+    img.width = 16
+    img.height = 16
+    header.appendChild(img)
   }
   const name = document.createElement('span')
+  name.className = 'bd-group-header__name'
   name.textContent = group
   name.title = group
-  header.appendChild(name)
+  const total = document.createElement('small')
+  total.className = 'bd-group-header__count'
+  total.textContent = String(count)
+  header.append(name, total)
 }
 
 export function clearAssigneeGroups(root: ParentNode): void {
-  for (const el of root.querySelectorAll('[data-bd-group]')) el.removeAttribute('data-bd-group')
+  for (const attr of ['data-bd-group', 'data-bd-group-key', 'data-bd-group-collapsed']) {
+    for (const el of root.querySelectorAll(`[${attr}]`)) el.removeAttribute(attr)
+  }
   for (const el of root.querySelectorAll('.bd-group-header')) el.remove()
 }
 
@@ -349,6 +471,7 @@ export function clearAll(root: ParentNode): void {
     el.removeAttribute('data-bd-hidden-column')
   for (const el of root.querySelectorAll('[data-bd-split]')) el.removeAttribute('data-bd-split')
   for (const el of root.querySelectorAll('.bd-split-header')) el.remove()
+  for (const el of root.querySelectorAll(`.${STACK_LOADER_CLASS}`)) el.remove()
   for (const el of root.querySelectorAll<HTMLElement>('[data-bd-shifted]')) {
     el.style.transform = ''
     el.removeAttribute('data-bd-shifted')

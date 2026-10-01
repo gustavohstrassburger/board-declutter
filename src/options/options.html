@@ -15,11 +15,40 @@
 
       <form id="form">
         <section>
-          <h2>You and your team</h2>
+          <h2>Mode</h2>
+          <label>
+            Board mode
+            <select name="mode"></select>
+            <small id="mode-description"></small>
+            <small>
+              Picking a mode applies at once and sets the settings below. Changing any of the board
+              settings by hand switches back to Normal, keeping what is on the board. Picking Normal
+              yourself puts back the values you had before the mode.
+            </small>
+          </label>
+        </section>
+
+        <details open>
+          <summary><h2>You and your team</h2></summary>
+          <label>
+            Run only on these views (one per line)
+            <textarea
+              name="views"
+              rows="2"
+              placeholder="https://github.com/orgs/PostHog/projects/112/views/6"
+            ></textarea>
+            <small>
+              Project view URLs; the query string (sort, filters) is ignored. Leave empty to run on
+              every board.
+            </small>
+          </label>
           <label>
             Your GitHub login
             <input name="me" placeholder="octocat" autocomplete="off" />
-            <small>Cards assigned to you get a blue marker and are never hidden.</small>
+          </label>
+          <label class="check">
+            <input name="highlightMine" type="checkbox" /> Highlight cards assigned to you with a
+            blue marker
           </label>
           <label>
             Team members (one per line)
@@ -32,12 +61,15 @@
           <label>
             Cards from other teams
             <select name="otherTeamsMode" data-mode></select>
-            <small>Applies to cards with no team member assigned and no team label.</small>
+            <small>
+              Applies to cards assigned to no team member. Unassigned cards count as your team's
+              when they carry a team label.
+            </small>
           </label>
-        </section>
+        </details>
 
-        <section>
-          <h2>Noise</h2>
+        <details open>
+          <summary><h2>Noise</h2></summary>
           <label>
             AI-generated cards
             <select name="aiMode" data-mode></select>
@@ -47,45 +79,54 @@
             </small>
           </label>
           <label>
+            Cards not marked as AI-generated
+            <select name="nonAiMode" data-mode></select>
+            <small>Set to hide to leave only the bots' cards on the board.</small>
+          </label>
+          <label>
             Labels that mark a card as AI-generated (one per line)
             <textarea name="aiLabels" rows="2" placeholder="self-driving"></textarea>
           </label>
           <label>
             Cards with no assignee
             <select name="unassignedMode" data-mode></select>
+            <small
+              >Highlight keeps them visible with an amber marker, to spot work nobody owns.</small
+            >
           </label>
           <label>
             Hide titles matching these regexes (one per line)
             <textarea name="titlePatterns" rows="2" placeholder="^trunk-merge/"></textarea>
           </label>
-        </section>
+        </details>
 
-        <section>
-          <h2>Layout</h2>
+        <details open>
+          <summary><h2>Layout</h2></summary>
           <label>
             Collapse these columns (one per line)
             <textarea name="collapsedColumns" rows="2" placeholder="Done"></textarea>
             <small>
               Folded into a thin strip so they take no space but stay visible. To remove columns
-              entirely, use the Columns button on the board's floating toolbar.
+              entirely, use the Columns section of the floating toolbar's ⚙ panel.
             </small>
           </label>
           <label class="check">
-            <input name="compact" type="checkbox" /> Compact cards (single-line titles, no labels)
+            <input name="compact" type="checkbox" /> Compact cards (single-line titles, no labels or
+            other field chips)
           </label>
           <label class="check">
-            <input name="preloadColumns" type="checkbox" /> Load whole columns when the board opens
+            <input name="preloadColumns" type="checkbox" /> Preload cards (disable lazy-loading)
             <small>
               GitHub fetches a column page by page as you scroll; this scrolls each column for you
               once, so counts and splits cover every card from the start.
             </small>
           </label>
           <label class="check">
-            <input name="focus" type="checkbox" /> Focus mode: hide everything around the board
+            <input name="focus" type="checkbox" /> Full-screen board: hide everything around it
             <small>
-              GitHub's header, the project title bar, the view tabs and the filter bar disappear.
-              Push the mouse against the top edge of the window to bring them back; they hide again
-              when the mouse returns to the board.
+              GitHub's header, the project title bar and the view tabs disappear; the filter bar
+              stays. Push the mouse against the top edge of the window to bring them back; they hide
+              again when the mouse returns to the board.
             </small>
           </label>
           <label class="check">
@@ -105,15 +146,13 @@
             <select name="groupBy">
               <option value="none">Off</option>
               <option value="assignee">By assignee</option>
-              <option value="parent">By parent issue</option>
             </select>
             <small>
               Uses GitHub's own sort through the URL, so the whole column is ordered, and titles the
-              first card of each group. Grouping by parent needs the view to show the "Parent issue"
-              field. Turn it off to sort the view another way.
+              first card of each group. Turn it off to sort the view another way.
             </small>
           </label>
-        </section>
+        </details>
 
         <footer>
           <button type="submit">Save</button>

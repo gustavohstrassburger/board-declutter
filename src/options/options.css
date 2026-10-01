@@ -31,6 +31,27 @@ h2 {
   border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
 }
 
+/* Every section but the mode can be folded away; the h2 sits inside the summary as its label. */
+details > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary h2::before {
+  content: '▾';
+  display: inline-block;
+  width: 1em;
+  transition: transform 120ms ease;
+}
+
+details:not([open]) > summary h2::before {
+  transform: rotate(-90deg);
+}
+
 label {
   display: block;
   margin: 12px 0;

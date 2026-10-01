@@ -6,24 +6,27 @@ It was built for the PostHog Feature Flags board, where half of the "No Status" 
 
 ## What it does
 
-Every card on a board gets evaluated against a small set of rules. The AI rule needs the view to show the Labels field (View → Fields → Labels); on the PostHog board the AI bot labels its PRs `self-driving`, which no human PR carries. Each rule can **show**, **dim** or **hide** the card, and the strongest outcome wins. Cards assigned to you get a blue marker and are never hidden.
+Every card on a board gets evaluated against a small set of rules. The AI rule needs the view to show the Labels field (View → Fields → Labels); on the PostHog board the AI bot labels its PRs `self-driving`, which no human PR carries. Each rule can **show**, **dim** or **hide** the card, and the strongest outcome wins. The no-assignee rule can also **highlight** the card: it stays visible with an amber marker, so work nobody owns stands out. Cards assigned to you get a blue marker (unless **Highlight cards assigned to you** is off); the rules treat them like any other card.
 
-| Rule                                                                | Default |
-| ------------------------------------------------------------------- | ------- |
-| AI-generated cards, recognised by label (`self-driving` by default) | dim     |
-| Cards with no assignee                                              | show    |
-| Cards from other teams (no team member assigned and no team label)  | show    |
-| Titles matching a regex                                             | hide    |
+| Rule                                                                                    | Default |
+| --------------------------------------------------------------------------------------- | ------- |
+| AI-generated cards, recognised by label (`self-driving` by default)                     | dim     |
+| Cards not marked as AI-generated                                                        | show    |
+| Cards with no assignee                                                                  | show    |
+| Cards from other teams (assigned to no team member, or unassigned without a team label) | show    |
+| Titles matching a regex                                                                 | hide    |
 
 On top of that:
 
-- **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number only appears once the column is fully loaded.
-- **Hidden and collapsed columns**: the toolbar's **Columns** button lists the board's columns with a checkbox each, so "Done" or "No Status" can be removed in one click; the options page can also fold columns into a thin strip.
-- **Compact mode**: single-line titles, no label chips.
+- **Modes**: a set of defaults applied when the mode is picked, from the first button of the toolbar (a menu that describes each mode) or the top of the options page. Picking Normal puts back the values the mode replaced; changing a board setting by hand while a mode is on also switches to Normal, but keeps what is on the board, the change included. **Planning** hides other teams' cards and AI cards, highlights cards with no assignee (and drops the marker on yours), turns on the full-screen board and the issue/PR split, hides the Done column and keeps No Status visible. **Bot triage** leaves only AI cards, from every team, highlights the unassigned ones, turns on the full-screen board and the issue/PR split, hides Done and keeps No Status visible.
+- **Column counts**: next to GitHub's own count, each column shows how many cards are actually visible, with the hidden and dimmed breakdown on hover. Columns lazy-load, so the number only appears once the column is fully loaded. **Preload cards** (on by default) disables that lazy-loading by fetching every card of each column when the board opens, without scrolling: GitHub loads the next page when a sentinel at the end of the list comes into view, so the extension takes it out of the layout for a moment and puts it back. That also keeps loading going when rules hide so many cards that the column is too short to scroll.
+- **Hidden and collapsed columns**: the Columns section of the toolbar's settings panel lists the board's columns with a checkbox each, so "Done" or "No Status" can be removed in one click; the options page can also fold columns into a thin strip.
+- **Compact mode**: single-line titles, no field chips under them (labels, parent, dates).
 - **Split issues and PRs**: a column such as "No Status" becomes two stacks side by side, issues on the left and pull requests on the right, newest first. GitHub does the ordering (sort by Created) and a CSS grid does the split, so the virtualised list is never reordered. Each stack scrolls on its own: the wheel moves whichever stack the pointer is over.
-- **Group by assignee or by parent issue**: every column ordered by assignee (avatars and name as a header on the first card of each group) or by parent issue (number and title as the header). GitHub does the ordering: the extension applies the board's own sort through the URL, so it covers the whole column and not just the cards currently rendered. Grouping by parent needs the view to show the "Parent issue" field.
-- **Focus mode**: hides GitHub's header, the project title bar, the view tabs and the filter bar so the board gets the whole window. Push the mouse against the top edge to bring them back.
-- **Floating toolbar**: quick toggles for the rules without opening the options page. It can be minimized to a small pill that keeps the hidden count.
+- **Group by assignee**: every column ordered by assignee, with avatars and name as a header on the first card of each group. GitHub does the ordering: the extension applies the board's own sort through the URL, so it covers the whole column and not just the cards currently rendered. Click a group's header (it shows the card count) to fold its cards away and again to bring them back; folded groups are remembered per browser.
+- **Full-screen board** (focus mode): hides GitHub's header, the project title bar and the view tabs so the board gets the whole window; the filter bar stays. Push the mouse against the top edge to bring them back.
+- **Floating toolbar**: a small bar with the mode switch and **⚙**, which opens a panel with every setting the board uses at once: each rule's show/dim/hide choices, the layout switches, grouping and the columns. It shows a status only when there is something to say ("Off", or "⚠ labels hidden" when the view keeps the AI rules blind). It can be minimized to the mode switch and a small expand pill. The options page sections fold the same way, below the mode.
+- **AI chip**: cards carrying one of the AI labels show a small purple "AI" chip next to their number, in every mode, so bot work is recognisable even when it is not dimmed.
 - **Reason badge**: dimmed cards show why ("no assignee · not your team") in the bottom-right corner.
 
 ## Install
@@ -37,9 +40,10 @@ Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacke
 
 Recommended first setup for a team board:
 
+1. List the project views to run on in **Run only on these views** (by default the PostHog Feature Flags view, `projects/112/views/6`); anywhere else the extension does nothing. Leave it empty to run on every board. Pick views that show the Labels field, which the AI rules and modes rely on.
 1. Put your GitHub login in **Your GitHub login**.
-2. List your team members and team labels (e.g. `team/feature-flags`).
-3. Set **Cards from other teams** and **Cards with no assignee** to `dim` or `hide`, and collapse `Done`.
+1. List your team members and team labels (e.g. `team/feature-flags`).
+1. Set **Cards from other teams** and **Cards with no assignee** to `dim` or `hide`, and collapse `Done`.
 
 `bin/build --zip` produces a zip for sharing or uploading to the Chrome Web Store.
 
