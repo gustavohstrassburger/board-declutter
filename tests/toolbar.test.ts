@@ -26,12 +26,12 @@ beforeEach(() => {
 })
 
 describe('Toolbar', () => {
-  it('keeps the bar to the mode switch, the settings and minimize', () => {
+  it('keeps the bar to the mode switch and the settings', () => {
     setup(settings())
     const bar = [...document.querySelector('.bd-toolbar')!.children].filter(
-      (el) => !el.classList.contains('bd-toolbar__expand') && !(el as HTMLElement).hidden,
+      (el) => !(el as HTMLElement).hidden,
     )
-    expect(bar).toHaveLength(3)
+    expect(bar).toHaveLength(2)
     expect(bar[0]!.contains(control('mode'))).toBe(true)
     expect(bar[1]!.contains(control('settings'))).toBe(true)
   })
@@ -70,6 +70,14 @@ describe('Toolbar', () => {
     expect(segment('aiMode', 'show').getAttribute('aria-pressed')).toBe('false')
     segment('aiMode', 'hide').click()
     expect(onChange).toHaveBeenCalledWith({ aiMode: 'hide' })
+  })
+
+  it('warns while grouping without preloading', () => {
+    setup(settings({ groupBy: 'assignee', preloadColumns: false }))
+    expect(document.querySelector<HTMLElement>('.bd-toolbar__note')!.hidden).toBe(false)
+    document.body.innerHTML = ''
+    setup(settings({ groupBy: 'assignee', preloadColumns: true }))
+    expect(document.querySelector<HTMLElement>('.bd-toolbar__note')!.hidden).toBe(true)
   })
 
   it('flips switches', () => {

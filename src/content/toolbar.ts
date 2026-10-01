@@ -9,25 +9,6 @@ export interface ToolbarState {
   labelsVisible: boolean
 }
 
-const COLLAPSED_KEY = 'bd-toolbar-collapsed'
-
-/** Per-browser convenience, so it lives in localStorage and may be unavailable (private mode); default expanded. */
-function loadCollapsed(): boolean {
-  try {
-    return localStorage.getItem(COLLAPSED_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function saveCollapsed(collapsed: boolean): void {
-  try {
-    localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0')
-  } catch {
-    // ignore
-  }
-}
-
 const MODES: Mode[] = ['show', 'dim', 'hide']
 const UNASSIGNED_MODES: UnassignedMode[] = ['show', 'highlight', 'dim', 'hide']
 const GROUPS: GroupBy[] = ['none', 'assignee']
@@ -49,8 +30,8 @@ function button(className: string, text: string): HTMLButtonElement {
 export class Toolbar {
   private root: HTMLElement
   private status: HTMLElement
-  private expandButton: HTMLButtonElement
   private columnsList!: HTMLElement
+  private groupNote!: HTMLElement
   private columns: string[] = []
   private renderers = new Map<keyof Settings | 'mode', Renderer>()
   private lastState: ToolbarState = { columns: [], labelsVisible: true }
@@ -64,14 +45,8 @@ export class Toolbar {
     this.root.setAttribute('role', 'toolbar')
     this.root.setAttribute('aria-label', 'Board Declutter')
 
-    // First and always visible, even minimized: switching modes is the main thing the toolbar is for.
+    // First: switching modes is the main thing the toolbar is for.
     this.addModeMenu()
-
-    // Shown only while collapsed: a small pill that expands the bar again.
-    this.expandButton = button('bd-toolbar__btn bd-toolbar__expand', '▴')
-    this.expandButton.title = 'Expand Board Declutter toolbar'
-    this.expandButton.addEventListener('click', () => this.setCollapsed(false))
-    this.root.appendChild(this.expandButton)
 
     this.status = document.createElement('span')
     this.status.className = 'bd-toolbar__status'
@@ -80,20 +55,8 @@ export class Toolbar {
 
     this.addSettingsPanel()
 
-    const collapse = button('bd-toolbar__btn bd-toolbar__btn--icon', '–')
-    collapse.title = 'Minimize toolbar'
-    collapse.setAttribute('aria-label', 'Minimize toolbar')
-    collapse.addEventListener('click', () => this.setCollapsed(true))
-    this.root.appendChild(collapse)
-
     document.body.appendChild(this.root)
-    this.setCollapsed(loadCollapsed())
     this.render()
-  }
-
-  private setCollapsed(collapsed: boolean): void {
-    this.root.toggleAttribute('data-collapsed', collapsed)
-    saveCollapsed(collapsed)
   }
 
   /** A button that opens a popover above the toolbar; the popover closes on any outside click. */
@@ -136,7 +99,7 @@ export class Toolbar {
   private addModeMenu(): void {
     const { wrapper, btn, popup, close } = this.addDropdown('mode', '', 'menu', 'Board mode')
     wrapper.classList.add('bd-toolbar__mode')
-    popup.classList.add('bd-toolbar__menu--start')
+    popup.classList.add('bd-toolbar__menu--modes')
     const items = BOARD_MODES.map((mode) => {
       const item = button('bd-toolbar__menu-item bd-toolbar__mode-item', '')
       item.setAttribute('role', 'menuitemradio')
@@ -206,6 +169,13 @@ export class Toolbar {
       'Disable lazy-loading: fetch every card of each column when the board opens, instead of as you scroll',
     )
     this.addSegmented(layout, 'groupBy', 'Group by', GROUPS, (g) => GROUP_LABEL[g])
+    // Groups come from GitHub's sort over the cards it has loaded; without preloading, the rest only joins
+    // its group once a scroll loads it.
+    this.groupNote = document.createElement('p')
+    this.groupNote.className = 'bd-toolbar__note'
+    this.groupNote.textContent =
+      '⚠ Turn on Preload cards while grouping: cards not loaded yet are not grouped or shown until they load.'
+    layout.appendChild(this.groupNote)
 
     const columns = this.addSection(popup, 'Columns')
     this.columnsList = document.createElement('div')
@@ -350,6 +320,7 @@ export class Toolbar {
     this.root.toggleAttribute('data-disabled', !this.settings.enabled)
     this.root.toggleAttribute('data-mode-active', this.settings.mode !== 'normal')
     for (const render of this.renderers.values()) render(this.settings)
+    this.groupNote.hidden = this.settings.groupBy === 'none' || this.settings.preloadColumns
     this.renderStatus()
     this.renderColumns()
   }

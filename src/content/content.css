@@ -372,22 +372,14 @@ html[data-bd-compact] [data-board-card-id][data-bd-reasons]::after {
   display: none;
 }
 
-.bd-toolbar__expand {
-  display: none;
-}
-
-/* Minimized: everything but the mode switch and the expand pill goes away. */
-.bd-toolbar[data-collapsed] > :not(.bd-toolbar__expand, .bd-toolbar__mode) {
-  display: none;
-}
-
-.bd-toolbar[data-collapsed] > .bd-toolbar__expand {
-  display: inline-block;
-}
-
 /* Off: the rules and layout no longer apply, so their controls fade; the On switch in the footer stays. */
 .bd-toolbar[data-disabled] .bd-toolbar__section {
   opacity: 0.5;
+}
+
+/* Off, no mode applies either: the bar keeps only the "Off" status and the ⚙ panel to turn it back on. */
+.bd-toolbar[data-disabled] .bd-toolbar__mode {
+  display: none;
 }
 
 .bd-toolbar[data-mode-active] .bd-toolbar__mode > .bd-toolbar__btn {
@@ -425,10 +417,6 @@ html[data-bd-compact] [data-board-card-id][data-bd-reasons]::after {
   background: var(--bgColor-muted, #21262d);
 }
 
-.bd-toolbar__btn--icon {
-  padding: 4px 8px;
-}
-
 .bd-toolbar__dropdown {
   position: relative;
 }
@@ -452,17 +440,10 @@ html[data-bd-compact] [data-board-card-id][data-bd-reasons]::after {
   display: none;
 }
 
-/* The mode switch sits at the toolbar's left end, so its menu opens rightwards. */
-.bd-toolbar__menu--start {
-  left: 0;
-  right: auto;
+/* Wide enough for each mode's description. Like every toolbar menu it opens leftwards from its button, since
+   the bar sits against the right edge of the window. */
+.bd-toolbar__menu--modes {
   min-width: 260px;
-}
-
-/* Minimized, the toolbar is a small pill against the right edge: open leftwards so the menu stays on screen. */
-.bd-toolbar[data-collapsed] .bd-toolbar__menu--start {
-  left: auto;
-  right: 0;
 }
 
 .bd-toolbar__menu-item {
@@ -648,6 +629,17 @@ html[data-bd-compact] [data-board-card-id][data-bd-reasons]::after {
   width: 14px;
   height: 14px;
   margin: 0 6px;
+}
+
+.bd-toolbar__note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--fgColor-attention, #d29922);
+}
+
+.bd-toolbar__note[hidden] {
+  display: none;
 }
 
 .bd-toolbar__empty {
