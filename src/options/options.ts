@@ -18,6 +18,7 @@ const LIST_FIELDS = [
   'titlePatterns',
   'collapsedColumns',
   'splitColumns',
+  'noPreloadColumns',
 ] as const
 const MODE_FIELDS = ['aiMode', 'nonAiMode', 'otherTeamsMode', 'notMineMode'] as const
 

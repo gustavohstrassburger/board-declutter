@@ -109,7 +109,7 @@ function apply(): void {
   applyCollapsedColumns(board, settings.collapsedColumns)
   applyHiddenColumns(board, settings.hiddenColumns)
   applySplitColumns(board, settings.split ? settings.splitColumns : [], schedule)
-  if (settings.preloadColumns) preloader.run(board)
+  if (settings.preloadColumns) preloader.run(board, settings.noPreloadColumns)
   if (settings.groupBy !== 'none') {
     markGroups(board, entries, {
       collapsed: collapsedGroups,

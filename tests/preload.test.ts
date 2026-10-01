@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { loadMoreSentinels } from '../src/content/dom'
-import { needsPreload, nextAttemptCount } from '../src/content/preload'
+import { needsPreload, nextAttemptCount, preloadable } from '../src/content/preload'
 
 describe('needsPreload', () => {
   const now = 1_000_000
@@ -44,5 +44,19 @@ describe('loadMoreSentinels', () => {
     expect(loadMoreSentinels(document.querySelector('#zone')!).map((el) => el.id)).toEqual([
       'sentinel',
     ])
+  })
+})
+
+describe('preloadable', () => {
+  it('skips hidden or folded columns and the ones listed, case-insensitively', () => {
+    document.body.innerHTML = `
+      <div data-board-column="Todo"></div>
+      <div data-board-column="Done"></div>
+      <div data-board-column="Backlog" data-bd-hidden-column></div>
+      <div data-board-column="Archive" data-bd-collapsed></div>`
+    const names = [...document.querySelectorAll('[data-board-column]')]
+      .filter((c) => preloadable(c, ['done']))
+      .map((c) => c.getAttribute('data-board-column'))
+    expect(names).toEqual(['Todo'])
   })
 })

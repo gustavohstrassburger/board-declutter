@@ -122,8 +122,15 @@
           <label class="check">
             <input name="preloadColumns" type="checkbox" /> Preload cards (disable lazy-loading)
             <small>
-              GitHub fetches a column page by page as you scroll; this scrolls each column for you
-              once, so counts and splits cover every card from the start.
+              GitHub fetches a column page by page as you scroll; this fetches every page when the
+              board opens, so counts, splits and groups cover every card from the start.
+            </small>
+          </label>
+          <label>
+            Don't preload these columns (one per line)
+            <textarea name="noPreloadColumns" rows="2" placeholder="Done"></textarea>
+            <small>
+              For long columns you rarely read in full: they still load page by page as you scroll.
             </small>
           </label>
           <label class="check">

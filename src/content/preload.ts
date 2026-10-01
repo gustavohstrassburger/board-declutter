@@ -3,7 +3,9 @@ import { loadMoreSentinels, SELECTORS } from './dom'
 
 const MAX_ATTEMPTS = 4
 const ATTEMPT_WINDOW_MS = 60 * 1000
-const SETTLE_MS = 700
+/** How long a nudge waits for GitHub's next page before calling the attempt fruitless. */
+const LOAD_TIMEOUT_MS = 2000
+const POLL_MS = 100
 
 export interface Attempt {
   /** Attempts in a row that brought no new card shell. */
@@ -51,6 +53,24 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/** Resolves as soon as the list holds more card shells than `shells`, or after the timeout; true if it grew.
+ *  Moving on as soon as a page lands, rather than after a fixed delay, is what keeps long columns quick. */
+async function waitForMore(zone: Element, shells: number): Promise<boolean> {
+  for (let waited = 0; waited < LOAD_TIMEOUT_MS; waited += POLL_MS) {
+    if (zone.querySelectorAll(SELECTORS.card).length > shells) return true
+    await wait(POLL_MS)
+  }
+  return zone.querySelectorAll(SELECTORS.card).length > shells
+}
+
+/** Whether the preloader should fill this column: it is on screen (not hidden or folded) and not one the user
+ *  chose to leave to GitHub's own lazy-loading, such as a long "Done". */
+export function preloadable(column: Element, skip: string[]): boolean {
+  if (column.matches('[data-bd-hidden-column], [data-bd-collapsed]')) return false
+  const name = column.getAttribute('data-board-column')?.trim().toLowerCase() ?? ''
+  return !skip.some((s) => s.trim().toLowerCase() === name)
+}
+
 /** Loads the rest of each column without scrolling it. GitHub fetches a column's next page when a sentinel at
  *  the end of its list comes into view, and an intersection observer only reports changes: once rules hide
  *  most cards, the list is too short to scroll and the sentinel never leaves the view, so nothing loads.
@@ -63,12 +83,11 @@ export class ColumnPreloader {
 
   constructor(private onLoaded: () => void) {}
 
-  run(board: Element): void {
+  run(board: Element, skip: string[]): void {
     if (this.busy) return
     const now = Date.now()
     for (const column of board.querySelectorAll(SELECTORS.column)) {
-      // Nothing to see in a hidden or folded column, so nothing worth fetching for it.
-      if (column.matches('[data-bd-hidden-column], [data-bd-collapsed]')) continue
+      if (!preloadable(column, skip)) continue
       const name = column.getAttribute('data-board-column') ?? ''
       const zone = column.querySelector<HTMLElement>('[data-dnd-drop-type="card"]')
       if (!zone) continue
@@ -88,18 +107,14 @@ export class ColumnPreloader {
       for (const el of sentinels) el.style.setProperty('display', 'none', 'important')
       await frames(2)
       for (const el of sentinels) el.style.removeProperty('display')
-      await wait(SETTLE_MS)
+      const loaded = await waitForMore(zone, shells)
 
       // A split column lays its stacks out with transforms and pins the sentinel in view, so scrolling its list
       // would only make both stacks jump.
-      if (
-        zone.querySelectorAll(SELECTORS.card).length === shells &&
-        !zone.closest('[data-bd-split]') &&
-        zone.scrollHeight > zone.clientHeight
-      ) {
+      if (!loaded && !zone.closest('[data-bd-split]') && zone.scrollHeight > zone.clientHeight) {
         const restore = zone.scrollTop
         zone.scrollTop = zone.scrollHeight
-        await wait(SETTLE_MS)
+        await waitForMore(zone, shells)
         zone.scrollTop = restore
       }
     } finally {

@@ -24,6 +24,7 @@ export const DEFAULT_SETTINGS: Settings = {
   split: false,
   splitColumns: ['No Status'],
   preloadColumns: true,
+  noPreloadColumns: ['Done'],
   me: '',
   highlightMine: true,
 }

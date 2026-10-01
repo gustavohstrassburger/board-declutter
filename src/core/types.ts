@@ -61,6 +61,8 @@ export interface Settings {
   splitColumns: string[]
   /** Fetch every page of each column as soon as the board opens, instead of on scroll. */
   preloadColumns: boolean
+  /** Columns left to GitHub's own lazy-loading even with `preloadColumns`, e.g. a "Done" with hundreds of cards. */
+  noPreloadColumns: string[]
   /** Your GitHub login: cards assigned to you get highlighted. */
   me: string
   /** Give cards assigned to you the blue marker. */
