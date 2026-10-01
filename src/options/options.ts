@@ -19,7 +19,7 @@ const LIST_FIELDS = [
   'collapsedColumns',
   'splitColumns',
 ] as const
-const MODE_FIELDS = ['aiMode', 'nonAiMode', 'otherTeamsMode'] as const
+const MODE_FIELDS = ['aiMode', 'nonAiMode', 'otherTeamsMode', 'notMineMode'] as const
 
 const form = document.querySelector<HTMLFormElement>('#form')!
 const status = document.querySelector<HTMLElement>('#status')!

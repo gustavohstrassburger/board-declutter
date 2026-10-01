@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   teamMembers: [],
   teamLabels: [],
   otherTeamsMode: 'show',
+  notMineMode: 'show',
   titlePatterns: [],
   collapsedColumns: [],
   hiddenColumns: [],

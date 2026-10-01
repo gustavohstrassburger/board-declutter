@@ -133,6 +133,7 @@ export class Toolbar {
     this.addSegmented(rules, 'nonAiMode', 'Not AI', MODES)
     this.addSegmented(rules, 'unassignedMode', 'Unassigned', UNASSIGNED_MODES)
     this.addSegmented(rules, 'otherTeamsMode', 'Other teams', MODES)
+    this.addSegmented(rules, 'notMineMode', 'Not mine', MODES)
 
     const layout = this.addSection(popup, 'Layout')
     const switches = document.createElement('div')

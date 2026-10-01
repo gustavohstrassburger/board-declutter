@@ -52,6 +52,18 @@ describe('switchMode', () => {
     expect(switchMode(bot, 'normal')).toMatchObject({ highlightMine: true, aiMode: 'dim' })
   })
 
+  it('leaves only my cards in My cards, whatever the other rules were', () => {
+    const s = settings({ aiMode: 'hide', otherTeamsMode: 'hide', split: true, highlightMine: true })
+    expect(switchMode(s, 'myCards')).toMatchObject({
+      notMineMode: 'hide',
+      aiMode: 'show',
+      otherTeamsMode: 'show',
+      highlightMine: false,
+      split: false,
+      hiddenColumns: ['Done'],
+    })
+  })
+
   it('lists Done once when it is already hidden', () => {
     expect(switchMode(settings({ hiddenColumns: ['done'] }), 'planning').hiddenColumns).toEqual([
       'Done',

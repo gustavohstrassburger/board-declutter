@@ -22,7 +22,7 @@ export type Mode = 'show' | 'dim' | 'hide'
 export type UnassignedMode = Mode | 'highlight'
 
 /** A board mode is a set of defaults applied when it is picked (see `modes.ts`); 'normal' is your own settings. */
-export type BoardMode = 'normal' | 'planning' | 'botTriage'
+export type BoardMode = 'normal' | 'planning' | 'botTriage' | 'myCards'
 
 export interface Settings {
   enabled: boolean
@@ -43,6 +43,8 @@ export interface Settings {
   teamLabels: string[]
   /** What to do with cards that are not the team's: assigned to no team member, or unassigned without a team label. */
   otherTeamsMode: Mode
+  /** What to do with cards not assigned to you (`me`); ignored until `me` is set. */
+  notMineMode: Mode
   /** Regexes; cards whose title matches are hidden. */
   titlePatterns: string[]
   /** Column names to fold into a thin strip (e.g. "Done"). */

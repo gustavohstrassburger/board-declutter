@@ -105,6 +105,18 @@ describe('evaluate', () => {
     expect(d).toMatchObject({ mode: 'hide', highlight: true })
   })
 
+  it('can hide cards not assigned to me, but only once my login is set', () => {
+    const s = settings({ me: 'me', notMineMode: 'hide' })
+    expect(evaluate(card({ assignees: ['x'] }), s)).toMatchObject({
+      mode: 'hide',
+      reasons: ['not yours'],
+    })
+    expect(evaluate(card({ assignees: ['me'] }), s).mode).toBe('show')
+    expect(evaluate(card({ assignees: ['x'] }), settings({ notMineMode: 'hide' })).mode).toBe(
+      'show',
+    )
+  })
+
   it('can leave my own cards unmarked', () => {
     const c = card({ assignees: ['me'] })
     expect(evaluate(c, settings({ me: 'me', highlightMine: false })).highlight).toBe(false)

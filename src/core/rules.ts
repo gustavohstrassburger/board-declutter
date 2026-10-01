@@ -78,6 +78,10 @@ export function evaluate(card: Card, settings: Settings): Decision {
   if (teamConfigured && !belongsToTeam(card, settings)) {
     triggered.push({ mode: settings.otherTeamsMode, reason: 'not your team' })
   }
+  // Without a login every card would count as someone else's and the board would empty out.
+  if (settings.me && !isMine(card, settings)) {
+    triggered.push({ mode: settings.notMineMode, reason: 'not yours' })
+  }
   const pattern = matchesTitlePattern(card, settings)
   if (pattern !== undefined) {
     triggered.push({ mode: 'hide', reason: `title matches /${pattern}/` })

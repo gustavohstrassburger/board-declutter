@@ -54,6 +54,23 @@ export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
     hiddenColumns: ['Done'],
     shownColumns: ['No Status'],
   },
+  // Every card left is yours, so the marker would only add noise; the other rules must not hide any of them.
+  myCards: {
+    label: 'My cards',
+    description:
+      'Only cards assigned to you, from every team, AI or not: full-screen board on, Done hidden. Needs your GitHub login in the options.',
+    settings: {
+      notMineMode: 'hide',
+      highlightMine: false,
+      aiMode: 'show',
+      nonAiMode: 'show',
+      otherTeamsMode: 'show',
+      focus: true,
+      split: false,
+    },
+    hiddenColumns: ['Done'],
+    shownColumns: ['No Status'],
+  },
 }
 
 export const BOARD_MODES = Object.keys(MODE_PRESETS) as BoardMode[]
@@ -101,6 +118,7 @@ const VIEW_KEYS: (keyof Settings)[] = [
   'nonAiMode',
   'unassignedMode',
   'otherTeamsMode',
+  'notMineMode',
   'compact',
   'focus',
   'split',

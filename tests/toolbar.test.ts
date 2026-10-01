@@ -57,6 +57,7 @@ describe('Toolbar', () => {
       'Normal',
       'Planning',
       'Bot triage',
+      'My cards',
     ])
     expect(items[0]!.getAttribute('aria-checked')).toBe('true')
     items[2]!.click()
