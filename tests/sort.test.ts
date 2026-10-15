@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { ASSIGNEE_SORT, NEWEST_SORT, withSort } from '../src/content/sort'
+import { describe, expect, it, vi } from 'vitest'
+import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT, withSort } from '../src/content/sort'
 
 const board = 'https://github.com/orgs/PostHog/projects/112/views/2'
 
@@ -34,5 +34,23 @@ describe('withSort', () => {
 
   it('ignores pages that are not project views', () => {
     expect(withSort('https://github.com/PostHog/posthog/pulls', ASSIGNEE_SORT)).toBeUndefined()
+  })
+})
+
+describe('ensureSort', () => {
+  it('sorts the board in place, without reloading, and only once', () => {
+    sessionStorage.clear()
+    history.replaceState(null, '', '/orgs/o/projects/1/views/2')
+    document.body.innerHTML = '<div id="board"><div data-board-column="Todo"></div></div>'
+    const board = document.getElementById('board')!
+    const popstate = vi.fn()
+    addEventListener('popstate', popstate)
+
+    expect(ensureSort(board, ASSIGNEE_SORT)).toBe(true)
+    expect(new URL(location.href).searchParams.get('sortedBy[columnId]')).toBe('Assignees')
+    expect(popstate).toHaveBeenCalledTimes(1)
+    expect(ensureSort(board, ASSIGNEE_SORT)).toBe(false)
+
+    removeEventListener('popstate', popstate)
   })
 })

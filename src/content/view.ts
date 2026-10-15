@@ -7,6 +7,11 @@ function viewPath(view: string): string | undefined {
   }
 }
 
+/** Whether the path is a GitHub Projects page, the only kind that can show a board. */
+export function isProjectPath(pathname: string): boolean {
+  return /\/projects\/\d+/.test(pathname)
+}
+
 /** Whether the extension runs on this page: its path matches one of `views` (query strings such as the sort
  *  are ignored), or `views` is empty. */
 export function isAllowedView(pathname: string, views: string[]): boolean {

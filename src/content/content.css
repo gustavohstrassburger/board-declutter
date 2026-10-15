@@ -1,3 +1,16 @@
+/* While the extension prepares the board on load (see cloak.ts). Opacity, unlike display, keeps the board laid
+   out, so GitHub's virtualiser and load-more observer keep working behind it; it fades in once ready. */
+#project-items-region {
+  transition: opacity 150ms ease;
+}
+
+/* No transition into the cloak: a board already on screen (a view switch) must vanish at once, not fade out. */
+html[data-bd-cloak] #project-items-region {
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+
 /* Card states */
 [data-board-card-id][data-bd-mode='hide'] {
   display: none !important;

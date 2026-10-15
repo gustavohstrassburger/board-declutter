@@ -16,12 +16,13 @@ import {
   markGroups,
   resetStaleDecisions,
 } from './apply'
+import { Cloak } from './cloak'
 import { parseBoard, SELECTORS } from './dom'
 import { installPeek } from './focus'
 import { ColumnPreloader } from './preload'
 import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT } from './sort'
 import { Toolbar } from './toolbar'
-import { isAllowedView, viewShowsLabels } from './view'
+import { isAllowedView, isProjectPath, viewShowsLabels } from './view'
 
 let settings: Settings
 /** Bumped whenever settings change; see `applyDecision` for why decisions are stamped with it. */
@@ -29,6 +30,10 @@ let version = 0
 let toolbar: Toolbar | undefined
 let scheduled = false
 const preloader = new ColumnPreloader(() => schedule())
+const cloak = new Cloak(document.documentElement, () => schedule())
+/** When GitHub last changed the page, to tell when the board has settled (see `Cloak`). */
+let lastChange = performance.now()
+let lastPath: string | undefined
 
 const COLLAPSED_GROUPS_KEY = 'bd-collapsed-groups'
 
@@ -64,6 +69,11 @@ function schedule(): void {
 }
 
 function apply(): void {
+  // GitHub switches views without a reload and keeps the board element, so each new view is cloaked again.
+  if (location.pathname !== lastPath) {
+    lastPath = location.pathname
+    if (cloaks(location.pathname)) cloak.hide(performance.now())
+  }
   const board = document.querySelector(SELECTORS.board)
   if (!board) {
     toolbarVisible(false)
@@ -76,12 +86,14 @@ function apply(): void {
   if (!isAllowedView(location.pathname, settings.views)) {
     clearAll(board)
     toolbarVisible(false)
+    cloak.show()
     return
   }
   toolbarVisible(true)
 
   if (!settings.enabled) {
     clearAll(board)
+    cloak.show()
     toolbar?.update({
       columns: columnNames(board),
       labelsVisible: true,
@@ -93,6 +105,7 @@ function apply(): void {
   // Both features lean on GitHub's own sort; grouping by assignee takes precedence when both are on.
   const sort =
     settings.groupBy === 'assignee' ? ASSIGNEE_SORT : settings.split ? NEWEST_SORT : undefined
+  // GitHub re-renders the board with the sort, and that change drives the next pass.
   if (sort && ensureSort(board, sort)) return
 
   const entries = parseBoard(board)
@@ -109,7 +122,7 @@ function apply(): void {
   applyCollapsedColumns(board, settings.collapsedColumns)
   applyHiddenColumns(board, settings.hiddenColumns)
   applySplitColumns(board, settings.split ? settings.splitColumns : [], schedule)
-  if (settings.preloadColumns) preloader.run(board, settings.noPreloadColumns)
+  const loading = settings.preloadColumns && preloader.run(board, settings.noPreloadColumns)
   if (settings.groupBy !== 'none') {
     markGroups(board, entries, {
       collapsed: collapsedGroups,
@@ -123,6 +136,19 @@ function apply(): void {
     columns: columnNames(board),
     labelsVisible: entries.length === 0 || viewShowsLabels(document, location.pathname),
   })
+  const now = performance.now()
+  cloak.update(
+    {
+      loading,
+      hasColumns: board.querySelector(SELECTORS.column) !== null,
+      quietFor: now - lastChange,
+    },
+    now,
+  )
+}
+
+function cloaks(pathname: string): boolean {
+  return settings.enabled && isProjectPath(pathname) && isAllowedView(pathname, settings.views)
 }
 
 function columnNames(board: Element): string[] {
@@ -157,8 +183,20 @@ function isOwnMutation(record: MutationRecord): boolean {
   return target?.closest('.bd-toolbar, .bd-col-count') !== null
 }
 
+function domReady(): Promise<void> {
+  if (document.readyState !== 'loading') return Promise.resolve()
+  return new Promise((resolve) =>
+    document.addEventListener('DOMContentLoaded', () => resolve(), { once: true }),
+  )
+}
+
 async function main(): Promise<void> {
+  // The script runs before the page is parsed (document_start) so the board is cloaked from its first paint,
+  // even before the settings say whether this view is one to declutter.
+  if (isProjectPath(location.pathname)) cloak.hide(performance.now())
   settings = await loadSettings()
+  if (!cloaks(location.pathname)) cloak.show()
+  await domReady()
   // Toolbar clicks only persist; the storage change event then drives the update, so each change is applied once.
   toolbar = new Toolbar(settings, (patch) =>
     saveSettings(applyChange(settings, patch)).catch((err: unknown) =>
@@ -174,7 +212,10 @@ async function main(): Promise<void> {
   // GitHub navigates between views without a full reload and virtualises cards while scrolling,
   // so re-apply on every subtree change. `apply` is idempotent and cheap.
   new MutationObserver((records) => {
-    if (records.some((r) => !isOwnMutation(r))) schedule()
+    if (records.some((r) => !isOwnMutation(r))) {
+      lastChange = performance.now()
+      schedule()
+    }
   }).observe(document.body, { childList: true, subtree: true })
   schedule()
 }

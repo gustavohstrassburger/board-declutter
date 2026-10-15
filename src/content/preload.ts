@@ -5,7 +5,6 @@ const MAX_ATTEMPTS = 4
 const ATTEMPT_WINDOW_MS = 60 * 1000
 /** How long a nudge waits for GitHub's next page before calling the attempt fruitless. */
 const LOAD_TIMEOUT_MS = 2000
-const POLL_MS = 100
 
 export interface Attempt {
   /** Attempts in a row that brought no new card shell. */
@@ -49,18 +48,24 @@ function frames(n: number): Promise<void> {
   })
 }
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 /** Resolves as soon as the list holds more card shells than `shells`, or after the timeout; true if it grew.
- *  Moving on as soon as a page lands, rather than after a fixed delay, is what keeps long columns quick. */
-async function waitForMore(zone: Element, shells: number): Promise<boolean> {
-  for (let waited = 0; waited < LOAD_TIMEOUT_MS; waited += POLL_MS) {
-    if (zone.querySelectorAll(SELECTORS.card).length > shells) return true
-    await wait(POLL_MS)
-  }
-  return zone.querySelectorAll(SELECTORS.card).length > shells
+ *  Moving on the moment a page lands, rather than after a delay, is what keeps long columns quick. */
+export function waitForMore(zone: Element, shells: number): Promise<boolean> {
+  const grew = (): boolean => zone.querySelectorAll(SELECTORS.card).length > shells
+  if (grew()) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    const done = (): void => {
+      observer.disconnect()
+      clearTimeout(timer)
+      resolve(grew())
+    }
+    // Card shells are direct children of the list.
+    const observer = new MutationObserver(() => {
+      if (grew()) done()
+    })
+    const timer = setTimeout(done, LOAD_TIMEOUT_MS)
+    observer.observe(zone, { childList: true })
+  })
 }
 
 /** Whether the preloader should fill this column: it is on screen (not hidden or folded) and not one the user
@@ -76,32 +81,34 @@ export function preloadable(column: Element, skip: string[]): boolean {
  *  most cards, the list is too short to scroll and the sentinel never leaves the view, so nothing loads.
  *  Taking the sentinel out of the layout for a couple of frames and putting it back makes it enter the view
  *  again, which triggers the same fetch as scrolling. If that brings nothing, scrolling the list to the bottom
- *  and back is the fallback, for lists that load on scroll position instead. One column at a time. */
+ *  and back is the fallback, for lists that load on scroll position instead. Columns load side by side, as they
+ *  would if the user scrolled each one, so the board is complete in the time its longest column takes. */
 export class ColumnPreloader {
   private attempts = new Map<string, Attempt>()
-  private busy = false
+  /** Columns with a nudge in flight. */
+  private busy = new Set<string>()
 
   constructor(private onLoaded: () => void) {}
 
-  run(board: Element, skip: string[]): void {
-    if (this.busy) return
+  /** Nudges every column that needs it; true while a column is still loading. */
+  run(board: Element, skip: string[]): boolean {
     const now = Date.now()
     for (const column of board.querySelectorAll(SELECTORS.column)) {
       if (!preloadable(column, skip)) continue
       const name = column.getAttribute('data-board-column') ?? ''
       const zone = column.querySelector<HTMLElement>('[data-dnd-drop-type="card"]')
-      if (!zone) continue
+      if (!zone || this.busy.has(name)) continue
       const shells = zone.querySelectorAll(SELECTORS.card).length
       const attempt = this.attempts.get(name)
       if (!needsPreload(shells, githubColumnCount(column), attempt, now)) continue
       this.attempts.set(name, { count: nextAttemptCount(attempt, shells, now), at: now, shells })
-      void this.nudge(zone, shells)
-      return
+      void this.nudge(name, zone, shells)
     }
+    return this.busy.size > 0
   }
 
-  private async nudge(zone: HTMLElement, shells: number): Promise<void> {
-    this.busy = true
+  private async nudge(name: string, zone: HTMLElement, shells: number): Promise<void> {
+    this.busy.add(name)
     try {
       const sentinels = loadMoreSentinels(zone)
       for (const el of sentinels) el.style.setProperty('display', 'none', 'important')
@@ -118,7 +125,7 @@ export class ColumnPreloader {
         zone.scrollTop = restore
       }
     } finally {
-      this.busy = false
+      this.busy.delete(name)
     }
     this.onLoaded()
   }

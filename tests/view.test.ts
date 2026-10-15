@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isAllowedView, viewShowsLabels } from '../src/content/view'
+import { isAllowedView, isProjectPath, viewShowsLabels } from '../src/content/view'
 
 function page(visibleFields: number[], withToken = false): Document {
   document.body.innerHTML = `
@@ -39,5 +39,13 @@ describe('viewShowsLabels', () => {
   it('is false when the embedded data is missing or broken', () => {
     document.body.innerHTML = '<script id="memex-views" type="application/json">nope</script>'
     expect(viewShowsLabels(document, '/orgs/o/projects/1/views/2')).toBe(false)
+  })
+})
+
+describe('isProjectPath', () => {
+  it('matches org and user project pages only', () => {
+    expect(isProjectPath('/orgs/PostHog/projects/112/views/6')).toBe(true)
+    expect(isProjectPath('/users/me/projects/3')).toBe(true)
+    expect(isProjectPath('/PostHog/posthog/issues/1')).toBe(false)
   })
 })

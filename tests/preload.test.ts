@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { loadMoreSentinels } from '../src/content/dom'
-import { needsPreload, nextAttemptCount, preloadable } from '../src/content/preload'
+import {
+  ColumnPreloader,
+  needsPreload,
+  nextAttemptCount,
+  preloadable,
+  waitForMore,
+} from '../src/content/preload'
 
 describe('needsPreload', () => {
   const now = 1_000_000
@@ -58,5 +64,59 @@ describe('preloadable', () => {
       .filter((c) => preloadable(c, ['done']))
       .map((c) => c.getAttribute('data-board-column'))
     expect(names).toEqual(['Todo'])
+  })
+})
+
+describe('ColumnPreloader.run', () => {
+  function column(name: string, shells: number, counter: number): string {
+    return `
+      <div data-board-column="${name}">
+        <header><span data-component="CounterLabel">${counter}</span></header>
+        <div data-dnd-drop-type="card">${'<div data-board-card-id="x"></div>'.repeat(shells)}<div class="sentinel"></div></div>
+      </div>`
+  }
+
+  function board(shells: number, counter: number): Element {
+    document.body.innerHTML = column('Todo', shells, counter)
+    return document.body
+  }
+
+  it('loads every column that needs it at once', () => {
+    document.body.innerHTML = column('Todo', 1, 3) + column('Doing', 1, 3)
+    new ColumnPreloader(() => {}).run(document.body, [])
+    const nudged = [...document.querySelectorAll<HTMLElement>('.sentinel')].map(
+      (el) => el.style.display,
+    )
+    expect(nudged).toEqual(['none', 'none'])
+  })
+
+  it('reports loading while a column has cards left to fetch', () => {
+    expect(new ColumnPreloader(() => {}).run(board(1, 3), [])).toBe(true)
+  })
+
+  it('reports done once every column holds all its cards', () => {
+    expect(new ColumnPreloader(() => {}).run(board(3, 3), [])).toBe(false)
+  })
+})
+
+describe('waitForMore', () => {
+  function list(shells: number): Element {
+    document.body.innerHTML = `<div>${'<div data-board-card-id="x"></div>'.repeat(shells)}</div>`
+    return document.body.firstElementChild!
+  }
+
+  it('resolves as soon as a new card shell lands', async () => {
+    const zone = list(1)
+    const more = waitForMore(zone, 1)
+    zone.insertAdjacentHTML('beforeend', '<div data-board-card-id="y"></div>')
+    expect(await more).toBe(true)
+  })
+
+  it('gives up after the timeout when nothing lands', async () => {
+    vi.useFakeTimers()
+    const more = waitForMore(list(1), 1)
+    vi.advanceTimersByTime(2000)
+    expect(await more).toBe(false)
+    vi.useRealTimers()
   })
 })

@@ -1,3 +1,5 @@
+import { isProjectPath } from './view'
+
 const SORT_FIELD = 'sortedBy[columnId]'
 const SORT_DIRECTION = 'sortedBy[direction]'
 const REDIRECT_STAMP = 'bd-sort-redirect'
@@ -19,7 +21,7 @@ const OWN_SORTS = new Set([ASSIGNEE_SORT.columnId, 'Parent issue', NEWEST_SORT.c
  *  the sort is already there, or the user picked a sort of their own. */
 export function withSort(href: string, desired: Sort): string | undefined {
   const url = new URL(href)
-  if (!/\/projects\/\d+/.test(url.pathname)) return undefined
+  if (!isProjectPath(url.pathname)) return undefined
   const current = url.searchParams.get(SORT_FIELD)
   if (current === desired.columnId && url.searchParams.get(SORT_DIRECTION) === desired.direction)
     return undefined
@@ -29,8 +31,9 @@ export function withSort(href: string, desired: Sort): string | undefined {
   return url.toString()
 }
 
-/** Reloads the page with `desired` when a board view lacks it. Returns true when a navigation started.
- *  The stamp stops a loop if GitHub ever strips the parameter again. */
+/** Applies `desired` when a board view lacks it. Returns true when the sort changed.
+ *  GitHub's router re-reads the URL on popstate, so swapping the URL in place re-sorts the board without the
+ *  reload a real navigation would cause. The stamp stops a loop if GitHub ever strips the parameter again. */
 export function ensureSort(board: Element, desired: Sort): boolean {
   if (!board.querySelector('[data-board-column]')) return false
   const target = withSort(location.href, desired)
@@ -50,6 +53,7 @@ export function ensureSort(board: Element, desired: Sort): boolean {
   } catch {
     // private mode or full storage: still navigate once
   }
-  location.assign(target)
+  history.replaceState(history.state, '', target)
+  dispatchEvent(new PopStateEvent('popstate', { state: history.state }))
   return true
 }
