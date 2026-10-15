@@ -22,8 +22,8 @@ export function settled(state: BoardState): boolean {
  *  a view switch shows one finished board instead of every intermediate step. The board stays in the layout, so
  *  GitHub keeps rendering and loading cards behind it. */
 export class Cloak {
-  private since: number | undefined
-  private timer: ReturnType<typeof setTimeout> | undefined
+  private deadline: ReturnType<typeof setTimeout> | undefined
+  private pending: ReturnType<typeof setTimeout> | undefined
 
   /** `recheck` runs another pass once the board may have settled, in case GitHub changes nothing meanwhile. */
   constructor(
@@ -31,28 +31,29 @@ export class Cloak {
     private recheck: () => void,
   ) {}
 
-  hide(now: number): void {
-    if (this.since !== undefined) return
-    this.since = now
+  /** The time limit runs on its own timer, so the board shows even if no pass ever reports it settled (a pass
+   *  that stops early, or throws). */
+  hide(): void {
+    if (this.deadline !== undefined) return
     this.root.setAttribute(CLOAK_ATTRIBUTE, '')
-    this.later(MAX_CLOAK_MS)
+    this.deadline = setTimeout(() => this.show(), MAX_CLOAK_MS)
   }
 
   show(): void {
-    this.since = undefined
-    clearTimeout(this.timer)
+    clearTimeout(this.deadline)
+    clearTimeout(this.pending)
+    this.deadline = undefined
     this.root.removeAttribute(CLOAK_ATTRIBUTE)
   }
 
-  /** Shows the board once it has settled or the time limit has passed. */
-  update(state: BoardState, now: number): void {
-    if (this.since === undefined) return
-    if (settled(state) || now - this.since >= MAX_CLOAK_MS) this.show()
-    else this.later(QUIET_MS)
-  }
-
-  private later(ms: number): void {
-    clearTimeout(this.timer)
-    this.timer = setTimeout(this.recheck, ms)
+  /** Shows the board once it has settled, or checks again after a quiet spell. */
+  update(state: BoardState): void {
+    if (this.deadline === undefined) return
+    if (settled(state)) {
+      this.show()
+      return
+    }
+    clearTimeout(this.pending)
+    this.pending = setTimeout(this.recheck, QUIET_MS)
   }
 }

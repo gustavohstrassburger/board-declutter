@@ -19,41 +19,57 @@ describe('Cloak', () => {
   const root = document.documentElement
   const cloaked = (): boolean => root.hasAttribute('data-bd-cloak')
   const busy = { loading: true, hasColumns: true, quietFor: 0 }
+  let cloak: Cloak
+  const recheck = vi.fn()
 
-  beforeEach(() => vi.useFakeTimers())
-  afterEach(() => vi.useRealTimers())
+  beforeEach(() => {
+    vi.useFakeTimers()
+    recheck.mockClear()
+    cloak = new Cloak(root, recheck)
+  })
+
+  afterEach(() => {
+    cloak.show()
+    vi.useRealTimers()
+  })
 
   it('shows the board once it has settled', () => {
-    const cloak = new Cloak(root, () => {})
-    cloak.hide(0)
-    cloak.update(busy, 100)
+    cloak.hide()
+    cloak.update(busy)
     expect(cloaked()).toBe(true)
-    cloak.update({ loading: false, hasColumns: true, quietFor: QUIET_MS }, 200)
+    cloak.update({ loading: false, hasColumns: true, quietFor: QUIET_MS })
     expect(cloaked()).toBe(false)
   })
 
-  it('shows the board after the time limit even while it is still changing', () => {
-    const cloak = new Cloak(root, () => {})
-    cloak.hide(0)
-    cloak.update(busy, MAX_CLOAK_MS)
+  it('shows the board after the time limit even if no pass ever reports it settled', () => {
+    cloak.hide()
+    vi.advanceTimersByTime(MAX_CLOAK_MS - 1)
+    expect(cloaked()).toBe(true)
+    vi.advanceTimersByTime(1)
+    expect(cloaked()).toBe(false)
+  })
+
+  it('keeps the time limit while passes report the board still changing', () => {
+    cloak.hide()
+    for (let t = 0; t < MAX_CLOAK_MS; t += QUIET_MS) {
+      cloak.update(busy)
+      vi.advanceTimersByTime(QUIET_MS)
+    }
     expect(cloaked()).toBe(false)
   })
 
   it('asks for another check after a quiet spell, since a settled board changes nothing', () => {
-    const recheck = vi.fn()
-    const cloak = new Cloak(root, recheck)
-    cloak.hide(0)
-    cloak.update(busy, 0)
+    cloak.hide()
+    cloak.update(busy)
     vi.advanceTimersByTime(QUIET_MS)
     expect(recheck).toHaveBeenCalledTimes(1)
-    cloak.show()
   })
 
   it('keeps the original deadline when hidden again while cloaked', () => {
-    const cloak = new Cloak(root, () => {})
-    cloak.hide(0)
-    cloak.hide(1000)
-    cloak.update(busy, MAX_CLOAK_MS)
+    cloak.hide()
+    vi.advanceTimersByTime(MAX_CLOAK_MS - 1000)
+    cloak.hide()
+    vi.advanceTimersByTime(1000)
     expect(cloaked()).toBe(false)
   })
 })

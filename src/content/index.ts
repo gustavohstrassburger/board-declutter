@@ -72,7 +72,7 @@ function apply(): void {
   // GitHub switches views without a reload and keeps the board element, so each new view is cloaked again.
   if (location.pathname !== lastPath) {
     lastPath = location.pathname
-    if (cloaks(location.pathname)) cloak.hide(performance.now())
+    if (cloaks(location.pathname)) cloak.hide()
   }
   const board = document.querySelector(SELECTORS.board)
   if (!board) {
@@ -136,15 +136,11 @@ function apply(): void {
     columns: columnNames(board),
     labelsVisible: entries.length === 0 || viewShowsLabels(document, location.pathname),
   })
-  const now = performance.now()
-  cloak.update(
-    {
-      loading,
-      hasColumns: board.querySelector(SELECTORS.column) !== null,
-      quietFor: now - lastChange,
-    },
-    now,
-  )
+  cloak.update({
+    loading,
+    hasColumns: board.querySelector(SELECTORS.column) !== null,
+    quietFor: performance.now() - lastChange,
+  })
 }
 
 function cloaks(pathname: string): boolean {
@@ -193,7 +189,7 @@ function domReady(): Promise<void> {
 async function main(): Promise<void> {
   // The script runs before the page is parsed (document_start) so the board is cloaked from its first paint,
   // even before the settings say whether this view is one to declutter.
-  if (isProjectPath(location.pathname)) cloak.hide(performance.now())
+  if (isProjectPath(location.pathname)) cloak.hide()
   settings = await loadSettings()
   if (!cloaks(location.pathname)) cloak.show()
   await domReady()
