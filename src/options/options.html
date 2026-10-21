@@ -93,6 +93,22 @@
             <textarea name="aiLabels" rows="2" placeholder="self-driving"></textarea>
           </label>
           <label>
+            Cards not marked as low-hanging fruit
+            <select name="notLowHangingMode" data-mode></select>
+            <small
+              >Set to hide to leave only quick wins on the board, as the Low-hanging fruit mode
+              does.</small
+            >
+          </label>
+          <label>
+            Labels that mark a card as low-hanging fruit (one per line)
+            <textarea
+              name="lowHangingLabels"
+              rows="2"
+              placeholder="review/low-hanging-fruit"
+            ></textarea>
+          </label>
+          <label>
             Cards with no assignee
             <select name="unassignedMode" data-mode></select>
             <small

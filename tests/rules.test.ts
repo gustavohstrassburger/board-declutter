@@ -117,6 +117,22 @@ describe('evaluate', () => {
     )
   })
 
+  it('can hide cards without a low-hanging fruit label, matching it in any case', () => {
+    const s = settings({ notLowHangingMode: 'hide' })
+    expect(evaluate(card({ assignees: ['x'] }), s)).toMatchObject({
+      mode: 'hide',
+      reasons: ['not low-hanging fruit'],
+    })
+    expect(evaluate(card({ assignees: ['x'], labels: ['Review/Low-Hanging-Fruit'] }), s).mode).toBe(
+      'show',
+    )
+  })
+
+  it('never hides a card as not low-hanging while no label is configured', () => {
+    const s = settings({ notLowHangingMode: 'hide', lowHangingLabels: [] })
+    expect(evaluate(card({ assignees: ['x'] }), s).mode).toBe('show')
+  })
+
   it('can leave my own cards unmarked', () => {
     const c = card({ assignees: ['me'] })
     expect(evaluate(c, settings({ me: 'me', highlightMine: false })).highlight).toBe(false)

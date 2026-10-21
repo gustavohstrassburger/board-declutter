@@ -134,6 +134,7 @@ export class Toolbar {
     this.addSegmented(rules, 'unassignedMode', 'Unassigned', UNASSIGNED_MODES)
     this.addSegmented(rules, 'otherTeamsMode', 'Other teams', MODES)
     this.addSegmented(rules, 'notMineMode', 'Not mine', MODES)
+    this.addSegmented(rules, 'notLowHangingMode', 'Not low-hanging', MODES)
 
     const layout = this.addSection(popup, 'Layout')
     const switches = document.createElement('div')
@@ -305,12 +306,14 @@ export class Toolbar {
     if (!this.settings.enabled) {
       text = 'Off'
     } else if (
-      (this.settings.aiMode !== 'show' || this.settings.nonAiMode !== 'show') &&
+      (this.settings.aiMode !== 'show' ||
+        this.settings.nonAiMode !== 'show' ||
+        this.settings.notLowHangingMode !== 'show') &&
       !this.lastState.labelsVisible
     ) {
       text = '⚠ labels hidden'
       tip =
-        'This view does not show the Labels field, so the AI rule cannot see the "self-driving" label. Enable it under View → Fields → Labels.'
+        'This view does not show the Labels field, so the rules that read labels (AI, low-hanging fruit) cannot see them. Enable it under View → Fields → Labels.'
     }
     setText(this.status, text)
     this.status.hidden = text === ''

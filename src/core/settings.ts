@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS: Settings = {
   aiMode: 'dim',
   nonAiMode: 'show',
   unassignedMode: 'show',
+  lowHangingLabels: ['review/low-hanging-fruit'],
+  notLowHangingMode: 'show',
   teamMembers: [],
   teamLabels: [],
   otherTeamsMode: 'show',

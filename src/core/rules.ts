@@ -32,6 +32,11 @@ export function aiLabel(card: Card, settings: Settings): string | undefined {
   return card.labels.find((l) => wanted.has(l.trim().toLowerCase()))
 }
 
+function hasLowHangingLabel(card: Card, settings: Settings): boolean {
+  const wanted = new Set(settings.lowHangingLabels.map((l) => l.trim().toLowerCase()))
+  return card.labels.some((l) => wanted.has(l.trim().toLowerCase()))
+}
+
 export function isMine(card: Card, settings: Settings): boolean {
   if (!settings.me) return false
   const me = normalizeLogin(settings.me)
@@ -81,6 +86,10 @@ export function evaluate(card: Card, settings: Settings): Decision {
   // Without a login every card would count as someone else's and the board would empty out.
   if (settings.me && !isMine(card, settings)) {
     triggered.push({ mode: settings.notMineMode, reason: 'not yours' })
+  }
+  // Without a label to look for every card would count as not low-hanging and the board would empty out.
+  if (settings.lowHangingLabels.length > 0 && !hasLowHangingLabel(card, settings)) {
+    triggered.push({ mode: settings.notLowHangingMode, reason: 'not low-hanging fruit' })
   }
   const pattern = matchesTitlePattern(card, settings)
   if (pattern !== undefined) {

@@ -15,12 +15,19 @@ const LIST_FIELDS = [
   'teamMembers',
   'teamLabels',
   'aiLabels',
+  'lowHangingLabels',
   'titlePatterns',
   'collapsedColumns',
   'splitColumns',
   'noPreloadColumns',
 ] as const
-const MODE_FIELDS = ['aiMode', 'nonAiMode', 'otherTeamsMode', 'notMineMode'] as const
+const MODE_FIELDS = [
+  'aiMode',
+  'nonAiMode',
+  'otherTeamsMode',
+  'notMineMode',
+  'notLowHangingMode',
+] as const
 
 const form = document.querySelector<HTMLFormElement>('#form')!
 const status = document.querySelector<HTMLElement>('#status')!

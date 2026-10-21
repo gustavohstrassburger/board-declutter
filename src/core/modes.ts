@@ -20,6 +20,7 @@ export const RULE_KEYS = [
   'unassignedMode',
   'otherTeamsMode',
   'notMineMode',
+  'notLowHangingMode',
 ] as const satisfies readonly (keyof Settings)[]
 
 export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
@@ -42,6 +43,7 @@ export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
       nonAiMode: 'show',
       unassignedMode: 'highlight',
       notMineMode: 'show',
+      notLowHangingMode: 'show',
       focus: true,
       split: true,
     },
@@ -59,6 +61,7 @@ export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
       otherTeamsMode: 'show',
       unassignedMode: 'highlight',
       notMineMode: 'show',
+      notLowHangingMode: 'show',
       focus: true,
       split: true,
     },
@@ -77,6 +80,25 @@ export const MODE_PRESETS: Record<BoardMode, ModePreset> = {
       nonAiMode: 'show',
       otherTeamsMode: 'show',
       unassignedMode: 'show',
+      notLowHangingMode: 'show',
+      focus: true,
+      split: false,
+    },
+    hiddenColumns: ['Done'],
+    shownColumns: ['No Status'],
+  },
+  // Quick wins anyone can pick up, so no other rule may hide one: every team, AI or not, assigned or not.
+  lowHanging: {
+    label: 'Low-hanging fruit',
+    description:
+      'Only cards labelled as low-hanging fruit (review/low-hanging-fruit by default), from every team, AI or not: full-screen board on, Done hidden.',
+    settings: {
+      notLowHangingMode: 'hide',
+      aiMode: 'show',
+      nonAiMode: 'show',
+      otherTeamsMode: 'show',
+      unassignedMode: 'show',
+      notMineMode: 'show',
       focus: true,
       split: false,
     },

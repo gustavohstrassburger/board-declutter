@@ -22,7 +22,7 @@ export type Mode = 'show' | 'dim' | 'hide'
 export type UnassignedMode = Mode | 'highlight'
 
 /** A board mode is a set of defaults applied when it is picked (see `modes.ts`); 'normal' is your own settings. */
-export type BoardMode = 'normal' | 'planning' | 'botTriage' | 'myCards'
+export type BoardMode = 'normal' | 'planning' | 'botTriage' | 'myCards' | 'lowHanging'
 
 export interface Settings {
   enabled: boolean
@@ -37,6 +37,10 @@ export interface Settings {
   /** What to do with cards that carry none of `aiLabels`, i.e. human work; 'hide' leaves only the bots' cards. */
   nonAiMode: Mode
   unassignedMode: UnassignedMode
+  /** Labels that mark a card as low-hanging fruit, e.g. "review/low-hanging-fruit": small, quick to pick up. */
+  lowHangingLabels: string[]
+  /** What to do with cards that carry none of `lowHangingLabels`; ignored while that list is empty. */
+  notLowHangingMode: Mode
   /** Logins of the people on your team. */
   teamMembers: string[]
   /** Labels that mark a card as belonging to your team, e.g. "team/feature-flags". */

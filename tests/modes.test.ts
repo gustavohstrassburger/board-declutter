@@ -64,6 +64,18 @@ describe('switchMode', () => {
     })
   })
 
+  it('leaves only low-hanging fruit in its mode, whatever the other rules were', () => {
+    const s = settings({ aiMode: 'hide', notMineMode: 'hide', unassignedMode: 'hide', split: true })
+    expect(switchMode(s, 'lowHanging')).toMatchObject({
+      notLowHangingMode: 'hide',
+      aiMode: 'show',
+      notMineMode: 'show',
+      unassignedMode: 'show',
+      split: false,
+      hiddenColumns: ['Done'],
+    })
+  })
+
   it('sets every card rule in every mode, so nothing left behind leaks into one', () => {
     for (const mode of BOARD_MODES.filter((m) => m !== 'normal')) {
       expect(Object.keys(MODE_PRESETS[mode].settings)).toEqual(
