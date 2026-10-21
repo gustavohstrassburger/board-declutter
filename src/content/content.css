@@ -4,11 +4,21 @@
   transition: opacity 150ms ease;
 }
 
-/* No transition into the cloak: a board already on screen (a view switch) must vanish at once, not fade out. */
+/* No transition into the cloak: a board already on screen (a view switch) must vanish at once, not fade out.
+   The animation is a backstop for MAX_CLOAK_MS (cloak.ts) that needs no script: a content script orphaned by
+   an extension reload, or one that died, can leave the attribute behind, and the board must still show. */
 html[data-bd-cloak] #project-items-region {
   opacity: 0;
   pointer-events: none;
   transition: none;
+  animation: bd-uncloak 150ms ease 5s forwards;
+}
+
+@keyframes bd-uncloak {
+  to {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* Card states */
