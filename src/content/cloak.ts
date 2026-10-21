@@ -8,14 +8,17 @@ export interface BoardState {
   /** The preloader is still fetching a column. */
   loading: boolean
   hasColumns: boolean
+  /** A card on screen is still an empty placeholder or a loading skeleton. */
+  rendering: boolean
   /** Milliseconds since GitHub last changed the page. */
   quietFor: number
 }
 
-/** The board is worth showing once it has columns, nothing is left to preload and GitHub has stopped changing it:
- *  hiding cards pulls more card shells into view, which GitHub then renders and the rules may hide in turn. */
+/** The board is worth showing once it has columns, nothing is left to preload, every card on screen is drawn and
+ *  GitHub has stopped changing it: hiding cards pulls more card shells into view, which GitHub then renders and
+ *  the rules may hide in turn. A freshly loaded page of cards shows skeletons for a while after it lands. */
 export function settled(state: BoardState): boolean {
-  return state.hasColumns && !state.loading && state.quietFor >= QUIET_MS
+  return state.hasColumns && !state.loading && !state.rendering && state.quietFor >= QUIET_MS
 }
 
 /** Keeps the board invisible (see content.css) while the extension sorts, filters and preloads it, so a load or

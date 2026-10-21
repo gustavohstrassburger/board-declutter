@@ -25,6 +25,17 @@ export function isRendered(el: Element): boolean {
   return el.querySelector(SELECTORS.cardTitle) !== null
 }
 
+/** Whether GitHub is still filling in a card the user would see: a shell on screen with no title yet (an empty
+ *  placeholder or a loading skeleton). Hidden cards and cards in hidden columns take no space, so they never count. */
+export function renderingOnScreen(root: ParentNode, viewportHeight: number): boolean {
+  for (const el of root.querySelectorAll(SELECTORS.card)) {
+    if (isRendered(el)) continue
+    const rect = el.getBoundingClientRect()
+    if (rect.height > 0 && rect.bottom > 0 && rect.top < viewportHeight) return true
+  }
+  return false
+}
+
 interface Field {
   figure: Element
   values: string[]

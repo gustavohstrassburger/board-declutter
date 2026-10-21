@@ -16,7 +16,7 @@ import {
   resetStaleDecisions,
   setText,
 } from '../src/content/apply'
-import { cardKey, parseBoard, parseCard } from '../src/content/dom'
+import { cardKey, parseBoard, parseCard, renderingOnScreen } from '../src/content/dom'
 import { CARD_HTML } from './fixtures'
 
 beforeEach(() => {
@@ -87,6 +87,27 @@ describe('parseCard', () => {
 describe('parseBoard', () => {
   it('returns only rendered cards', () => {
     expect(parseBoard(document).map(({ card }) => card.id)).toEqual(['231274630', '99', '500'])
+  })
+})
+
+describe('renderingOnScreen', () => {
+  const placeholder = (): Element => document.querySelector('[data-board-card-id="248684323"]')!
+  const at = (top: number, height: number): void => {
+    vi.spyOn(placeholder(), 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, top, 300, height),
+    )
+  }
+
+  it('is true while a card on screen has no title yet', () => {
+    at(100, 80)
+    expect(renderingOnScreen(document, 800)).toBe(true)
+  })
+
+  it('ignores cards below the screen and cards that take no space', () => {
+    at(900, 80)
+    expect(renderingOnScreen(document, 800)).toBe(false)
+    at(100, 0)
+    expect(renderingOnScreen(document, 800)).toBe(false)
   })
 })
 

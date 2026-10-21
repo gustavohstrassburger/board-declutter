@@ -17,7 +17,7 @@ import {
   resetStaleDecisions,
 } from './apply'
 import { Cloak } from './cloak'
-import { parseBoard, SELECTORS } from './dom'
+import { parseBoard, renderingOnScreen, SELECTORS } from './dom'
 import { installPeek } from './focus'
 import { ColumnPreloader } from './preload'
 import { ASSIGNEE_SORT, ensureSort, NEWEST_SORT } from './sort'
@@ -139,6 +139,7 @@ function apply(): void {
   cloak.update({
     loading,
     hasColumns: board.querySelector(SELECTORS.column) !== null,
+    rendering: renderingOnScreen(board, window.innerHeight),
     quietFor: performance.now() - lastChange,
   })
 }

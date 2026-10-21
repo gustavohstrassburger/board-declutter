@@ -2,15 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Cloak, MAX_CLOAK_MS, QUIET_MS, settled } from '../src/content/cloak'
 
 describe('settled', () => {
-  const ready = { loading: false, hasColumns: true, quietFor: QUIET_MS }
+  const ready = { loading: false, hasColumns: true, rendering: false, quietFor: QUIET_MS }
 
   it('is true once the board has columns, nothing loading and no recent change', () => {
     expect(settled(ready)).toBe(true)
   })
 
-  it('waits for columns, the preloader and a quiet spell', () => {
+  it('waits for columns, the preloader, the cards on screen and a quiet spell', () => {
     expect(settled({ ...ready, hasColumns: false })).toBe(false)
     expect(settled({ ...ready, loading: true })).toBe(false)
+    expect(settled({ ...ready, rendering: true })).toBe(false)
     expect(settled({ ...ready, quietFor: QUIET_MS - 1 })).toBe(false)
   })
 })
@@ -18,7 +19,7 @@ describe('settled', () => {
 describe('Cloak', () => {
   const root = document.documentElement
   const cloaked = (): boolean => root.hasAttribute('data-bd-cloak')
-  const busy = { loading: true, hasColumns: true, quietFor: 0 }
+  const busy = { loading: true, hasColumns: true, rendering: false, quietFor: 0 }
   let cloak: Cloak
   const recheck = vi.fn()
 
@@ -37,7 +38,7 @@ describe('Cloak', () => {
     cloak.hide()
     cloak.update(busy)
     expect(cloaked()).toBe(true)
-    cloak.update({ loading: false, hasColumns: true, quietFor: QUIET_MS })
+    cloak.update({ loading: false, hasColumns: true, rendering: false, quietFor: QUIET_MS })
     expect(cloaked()).toBe(false)
   })
 
